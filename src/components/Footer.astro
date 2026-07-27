@@ -1,0 +1,23 @@
+---
+import { localizedSiteConfig } from '../config';
+import { localizedPath, ui, type Lang } from '../lib/i18n';
+const year = new Date().getFullYear();
+interface Props { lang?: Lang }
+const { lang = 'zh' } = Astro.props;
+const siteConfig = localizedSiteConfig[lang];
+const t = ui[lang];
+---
+
+<footer class="site-footer">
+  <div class="shell footer-inner">
+    <div>
+      <strong>{siteConfig.displayName}'s Blog</strong>
+      <p>© {year} {siteConfig.author}. {t.footer.powered}</p>
+    </div>
+    <nav aria-label={lang === 'en' ? 'Footer navigation' : '页脚导航'}>
+      <a href={siteConfig.feedUrl} target="_blank" rel="noreferrer" title={lang === 'en' ? 'Copy this URL into an RSS reader' : '复制此地址到 RSS 阅读器'}>{t.footer.rss}</a>
+      <a href={localizedPath('/about/', lang)}>{t.footer.about}</a>
+      {siteConfig.github && <a href={siteConfig.github} target="_blank" rel="me noreferrer">GitHub</a>}
+    </nav>
+  </div>
+</footer>

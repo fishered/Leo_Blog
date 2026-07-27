@@ -1,0 +1,42 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { localizedSiteConfig } from '../../config';
+
+const lang = 'en';
+const siteConfig = localizedSiteConfig[lang];
+---
+
+<BaseLayout title="About" description="About Leo and this continuously updated engineering notebook." lang={lang}>
+  <article class="about-page shell">
+    <header>
+      <p class="eyebrow">About this notebook</p>
+      <h1>Hi, I'm Leo.</h1>
+      <p class="lead">I collect technical articles that used to live across different platforms and keep recording current engineering practice here.</p>
+    </header>
+    <div class="about-grid">
+      <div class="prose">
+        <h2>Why this blog exists</h2>
+        <p>My older posts were scattered across Zhihu, dev.to, CNBlogs, and other platforms. Platforms change and links break, but Markdown is portable, versionable, and easier to preserve.</p>
+        <p>This site is the new home for those notes. Migrated posts keep their original source and publication date; important revisions are marked explicitly.</p>
+        <h2>What I write about</h2>
+        <p>The main topics are software engineering, system design, Java, AI-assisted development, open-source tools, and the problems that only become clear after real debugging.</p>
+        <h2>Content principles</h2>
+        <ul>
+          <li>Explain the reasoning process, not only the final answer.</li>
+          <li>Separate facts, experience, and hypotheses that still need validation.</li>
+          <li>Revise directly when mistakes are found, and keep update dates visible.</li>
+        </ul>
+        <p><a class="text-link" href={siteConfig.feedUrl} target="_blank" rel="noreferrer" title="Copy this URL into Feedly, Inoreader, or another RSS reader">Subscribe via RSS →</a></p>
+      </div>
+      <aside class="about-facts">
+        <p class="eyebrow">Notebook index</p>
+        <dl>
+          <div><dt>Host</dt><dd>GitHub Pages</dd></div>
+          <div><dt>Source</dt><dd>Markdown / MDX</dd></div>
+          <div><dt>Update flow</dt><dd>Git push</dd></div>
+          <div><dt>Status</dt><dd><span class="status-dot"></span> Actively organized</dd></div>
+        </dl>
+      </aside>
+    </div>
+  </article>
+</BaseLayout>

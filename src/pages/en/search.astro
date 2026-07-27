@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { withBase } from '../../lib/url';
+
+const lang = 'en';
+const bundlePath = withBase('/pagefind/');
+---
+
+<BaseLayout title="Search" description="Search all English posts." lang={lang}>
+  <header class="page-header shell" data-pagefind-ignore="all">
+    <p class="eyebrow">Full-text search</p>
+    <h1>Search posts</h1>
+    <p>Search by technical terms, error messages, framework names, or post titles.</p>
+  </header>
+  <section class="section shell search-page" data-pagefind-ignore="all">
+    <div id="search"><p class="search-loading">The search index is loaded after a production build.</p></div>
+  </section>
+  <link rel="stylesheet" href={withBase('/pagefind/pagefind-ui.css')} />
+  <script is:inline src={withBase('/pagefind/pagefind-ui.js')}></script>
+  <script is:inline define:vars={{ bundlePath }}>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!window.PagefindUI) return;
+
+      document.querySelector('#search').innerHTML = '';
+      new window.PagefindUI({
+        element: '#search',
+        bundlePath,
+        showSubResults: true,
+        showImages: false,
+        translations: {
+          placeholder: 'Search posts...',
+          clear_search: 'Clear',
+          load_more: 'Load more',
+          search_label: 'Search this site',
+          filters_label: 'Filters',
+          zero_results: 'No results for “[SEARCH_TERM]”',
+          many_results: '[COUNT] results',
+          one_result: '1 result',
+          alt_search: 'No results for “[SEARCH_TERM]”. Searching for “[DIFFERENT_TERM]” instead.',
+          search_suggestion: 'No results for “[SEARCH_TERM]”. Try:',
+          searching: 'Searching for “[SEARCH_TERM]”'
+        }
+      });
+
+      const query = new URLSearchParams(window.location.search).get('q');
+      if (!query) return;
+
+      window.setTimeout(() => {
+        const input = document.querySelector('#search input[type="text"], #search input[type="search"]');
+        if (!input) return;
+        input.value = query;
+        input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: query }));
+      }, 120);
+    });
+  </script>
+</BaseLayout>

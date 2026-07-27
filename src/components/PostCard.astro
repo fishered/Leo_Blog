@@ -1,0 +1,33 @@
+---
+import { ArrowUpRight, Clock3 } from 'lucide-astro';
+import type { Post } from '../lib/posts';
+import { formatDate, readingMinutes } from '../lib/posts';
+import { postPath, tagPath, ui, type Lang } from '../lib/i18n';
+
+interface Props { post: Post; order?: number; lang?: Lang }
+const { post, order = 1, lang = post.data.lang } = Astro.props;
+const t = ui[lang];
+const minutes = readingMinutes(post.body ?? '');
+const href = postPath(post.data.slug, lang);
+---
+
+<article class="post-row">
+  <span class="post-index" aria-hidden="true">{String(order).padStart(2, '0')}</span>
+  <div class="post-summary">
+    <div class="post-meta">
+      <time datetime={post.data.published.toISOString()}>{formatDate(post.data.published, lang)}</time>
+      <span><Clock3 size={13} />{minutes} {t.readingMinute}</span>
+      {post.data.series && <span>{post.data.series}</span>}
+    </div>
+    <h2><a href={href}>{post.data.title}</a></h2>
+    <p>{post.data.description}</p>
+    <ul class="tag-list" aria-label={t.postTagsLabel}>
+      {post.data.tags.map((tag) => (
+        <li><a href={tagPath(tag, lang)}>#{tag}</a></li>
+      ))}
+    </ul>
+  </div>
+  <a class="post-arrow" href={href} aria-label={lang === 'en' ? `Read ${post.data.title}` : `阅读《${post.data.title}》`}>
+    <ArrowUpRight size={19} />
+  </a>
+</article>

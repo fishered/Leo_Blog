@@ -1,0 +1,88 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Pagination from '../components/Pagination.astro';
+import PostCard from '../components/PostCard.astro';
+import Sidebar from '../components/Sidebar.astro';
+import { siteConfig } from '../config';
+import { ArrowUpRight, Clock3, Search } from 'lucide-astro';
+import { formatDate, getAllTags, getPublishedPosts, readingMinutes } from '../lib/posts';
+import { localizedPath, postPath, tagPath } from '../lib/i18n';
+
+const lang = 'zh';
+const posts = await getPublishedPosts(lang);
+const pageSize = 9;
+const totalPages = Math.ceil(posts.length / pageSize);
+const pagePosts = posts.slice(0, pageSize);
+const featured = pagePosts[0];
+const recentPosts = pagePosts.slice(1);
+const topicCount = getAllTags(posts).length;
+---
+
+<BaseLayout>
+  <section class="home-intro shell" aria-label="博客简介">
+    <div class="intro-copy">
+      <p>这里是我的个人数字书房。</p>
+      <span>{siteConfig.signature}</span>
+    </div>
+    <dl class="intro-stats" aria-label="博客数据">
+      <div><dt>{posts.length}</dt><dd>篇文章</dd></div>
+      <div><dt>{topicCount}</dt><dd>个主题</dd></div>
+      <div><dt>MD</dt><dd>持续写作</dd></div>
+    </dl>
+  </section>
+
+  <div class="home-layout shell">
+    <section class="home-posts" aria-labelledby="latest-title">
+      <div class="home-search" aria-label="搜索文章" data-pagefind-ignore="all">
+        <form action={localizedPath('/search/', lang)} role="search">
+          <Search size={18} aria-hidden="true" />
+          <input name="q" type="search" placeholder="搜索 Java、RocketMQ、Agent、调度中心..." />
+          <button type="submit">搜索</button>
+        </form>
+      </div>
+
+      <div class="content-heading">
+        <div>
+          <span>LATEST WRITING</span>
+          <h2 id="latest-title">最近文章</h2>
+        </div>
+        <a href={localizedPath('/archive/', lang)}>时间归档</a>
+      </div>
+
+      {featured && (
+        <article class="featured-post">
+          <p class="featured-label">01 · FEATURED NOTE</p>
+          <div class="featured-meta">
+            <time datetime={featured.data.published.toISOString()}>{formatDate(featured.data.published, lang)}</time>
+            <span><Clock3 size={13} />{readingMinutes(featured.body ?? '')} 分钟阅读</span>
+            {featured.data.series && <span>{featured.data.series}</span>}
+          </div>
+          <h2><a href={postPath(featured.data.slug, lang)}>{featured.data.title}</a></h2>
+          <p>{featured.data.description}</p>
+          <div class="featured-footer">
+            <ul class="tag-list" aria-label="文章标签">
+              {featured.data.tags.map((tag) => (
+                <li><a href={tagPath(tag, lang)}>#{tag}</a></li>
+              ))}
+            </ul>
+            <a class="featured-link" href={postPath(featured.data.slug, lang)} aria-label={`阅读《${featured.data.title}》`}>
+              阅读全文 <ArrowUpRight size={16} />
+            </a>
+          </div>
+        </article>
+      )}
+
+      {recentPosts.length > 0 && (
+        <div class="recent-writing">
+          <p class="recent-label">MORE RECENT NOTES</p>
+          <div class="post-list">
+            {recentPosts.map((post, index) => <PostCard post={post} order={index + 2} lang={lang} />)}
+          </div>
+        </div>
+      )}
+
+      <Pagination currentPage={1} totalPages={totalPages} lang={lang} />
+    </section>
+    <Sidebar lang={lang} posts={posts} />
+  </div>
+</BaseLayout>

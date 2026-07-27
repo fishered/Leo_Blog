@@ -1,0 +1,42 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Pagination from '../../components/Pagination.astro';
+import PostCard from '../../components/PostCard.astro';
+import Sidebar from '../../components/Sidebar.astro';
+import { getPublishedPosts, type Post } from '../../lib/posts';
+import type { GetStaticPaths, Page } from 'astro';
+
+const pageSize = 9;
+const lang = 'zh';
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const posts = await getPublishedPosts('zh');
+  return paginate(posts, { pageSize: 9, props: { allPosts: posts } });
+}) satisfies GetStaticPaths;
+
+interface Props {
+  page: Page<Post>;
+  allPosts: Post[];
+}
+const { page, allPosts } = Astro.props;
+const currentPage = page.currentPage;
+const totalPages = page.lastPage;
+---
+
+<BaseLayout title={`文章第 ${currentPage} 页`} description={`Leo's Blog 第 ${currentPage} 页文章列表`}>
+  <header class="page-header shell">
+    <p class="eyebrow">Writing page {currentPage}</p>
+    <h1>最近文章</h1>
+    <p>按知乎原始发布时间排序。这里是第 {currentPage} 页，共 {totalPages} 页。</p>
+  </header>
+
+  <div class="home-layout shell paged-layout">
+    <section class="home-posts" aria-label={`第 ${currentPage} 页文章`}>
+      <div class="post-list">
+        {page.data.map((post, index) => <PostCard post={post} order={(currentPage - 1) * pageSize + index + 1} lang={lang} />)}
+      </div>
+      <Pagination currentPage={currentPage} totalPages={totalPages} lang={lang} />
+    </section>
+    <Sidebar lang={lang} posts={allPosts} />
+  </div>
+</BaseLayout>

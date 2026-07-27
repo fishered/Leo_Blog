@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPublishedPosts, formatDate } from '../lib/posts';
+import { postPath } from '../lib/i18n';
+
+const lang = 'zh';
+const posts = await getPublishedPosts(lang);
+const years = Object.entries(
+  posts.reduce<Record<string, typeof posts>>((groups, post) => {
+    const year = String(post.data.published.getFullYear());
+    (groups[year] ??= []).push(post);
+    return groups;
+  }, {}),
+).sort(([a], [b]) => Number(b) - Number(a));
+---
+
+<BaseLayout title="时间归档" description="按年份浏览所有文章。" lang={lang}>
+  <header class="page-header shell">
+    <p class="eyebrow">Chronological archive</p>
+    <h1>时间归档</h1>
+    <p>写作留下的不只是文章，也是一条可以回看的时间线。</p>
+  </header>
+  <section class="section shell archive">
+    {years.map(([year, yearPosts]) => (
+      <div class="archive-year">
+        <h2>{year}</h2>
+        <div>
+          {yearPosts.map((post) => (
+            <a href={postPath(post.data.slug, lang)}>
+              <time>{formatDate(post.data.published, lang).slice(5)}</time>
+              <span>{post.data.title}</span>
+              <small>{post.data.tags.slice(0, 2).join(' / ')}</small>
+            </a>
+          ))}
+        </div>
+      </div>
+    ))}
+  </section>
+</BaseLayout>

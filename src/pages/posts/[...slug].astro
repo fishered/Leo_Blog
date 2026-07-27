@@ -1,0 +1,68 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Provenance from '../../components/Provenance.astro';
+import { getPublishedPosts, formatDate, readingMinutes } from '../../lib/posts';
+import { postPath, tagPath, ui } from '../../lib/i18n';
+
+const lang = 'zh';
+
+export async function getStaticPaths() {
+  const posts = await getPublishedPosts('zh');
+  return posts.map((post) => ({ params: { slug: post.data.slug }, props: { post, allPosts: posts } }));
+}
+
+const { post, allPosts } = Astro.props;
+const t = ui[lang];
+const { Content, headings } = await render(post);
+const minutes = readingMinutes(post.body ?? '');
+const toc = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+const related = allPosts
+  .filter((candidate) => candidate.id !== post.id && candidate.data.tags.some((tag) => post.data.tags.includes(tag)))
+  .slice(0, 3);
+---
+
+<BaseLayout title={post.data.title} description={post.data.description} image={post.data.cover} type="article" lang={lang}>
+  <article class="article-shell" data-pagefind-body>
+    <header class="article-header shell">
+      <p class="article-series"><span aria-hidden="true">✦</span>{post.data.series ?? t.article.fallbackSeries}</p>
+      <h1 data-pagefind-meta="title">{post.data.title}</h1>
+      <p class="article-deck">{post.data.description}</p>
+      <div class="article-meta">
+        <time datetime={post.data.published.toISOString()}>{t.article.published} {formatDate(post.data.published, lang)}</time>
+        {post.data.updated && <span>{t.article.updated} {formatDate(post.data.updated, lang)}</span>}
+        <span>{minutes} {t.readingSuffix}</span>
+      </div>
+      <div class="article-tags" data-pagefind-filter="tag">
+        {post.data.tags.map((tag) => <a href={tagPath(tag, lang)}>#{tag}</a>)}
+      </div>
+    </header>
+
+    <div class="article-layout shell">
+      <aside class="article-rail"><Provenance post={post} lang={lang} /></aside>
+      <div class="prose article-content"><Content /></div>
+      <aside class="toc" aria-label={t.article.toc}>
+        <p class="eyebrow">{t.article.toc}</p>
+        {toc.length ? (
+          <ol>{toc.map((heading) => <li class={`depth-${heading.depth}`}><a href={`#${heading.slug}`}>{heading.text}</a></li>)}</ol>
+        ) : <p class="muted">{t.article.noToc}</p>}
+      </aside>
+    </div>
+
+    {related.length > 0 && (
+      <aside class="related shell" data-pagefind-ignore="all">
+        <p class="eyebrow">{t.article.relatedEyebrow}</p>
+        <h2>{t.article.relatedTitle}</h2>
+        <div>
+          {related.map((item) => (
+            <a href={postPath(item.data.slug, lang)}>
+              <span>{item.data.tags[0] ?? t.article.defaultTag}</span>
+              <strong>{item.data.title}</strong>
+              <b>↗</b>
+            </a>
+          ))}
+        </div>
+      </aside>
+    )}
+  </article>
+</BaseLayout>

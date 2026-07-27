@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { withBase } from '../lib/url';
+
+const lang = 'zh';
+const bundlePath = withBase('/pagefind/');
+---
+
+<BaseLayout title="搜索" description="搜索全部文章。" lang={lang}>
+  <header class="page-header shell" data-pagefind-ignore="all">
+    <p class="eyebrow">Full-text search</p>
+    <h1>搜索文章</h1>
+    <p>输入技术名词、错误信息、框架名称或文章标题。</p>
+  </header>
+  <section class="section shell search-page" data-pagefind-ignore="all">
+    <div id="search"><p class="search-loading">搜索索引会在生产构建后加载。</p></div>
+  </section>
+  <link rel="stylesheet" href={withBase('/pagefind/pagefind-ui.css')} />
+  <script is:inline src={withBase('/pagefind/pagefind-ui.js')}></script>
+  <script is:inline define:vars={{ bundlePath }}>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!window.PagefindUI) return;
+
+      document.querySelector('#search').innerHTML = '';
+      new window.PagefindUI({
+        element: '#search',
+        bundlePath,
+        showSubResults: true,
+        showImages: false,
+        translations: {
+          placeholder: '搜索文章...',
+          clear_search: '清除',
+          load_more: '加载更多',
+          search_label: '搜索本站内容',
+          filters_label: '筛选',
+          zero_results: '没有找到 “[SEARCH_TERM]” 相关内容',
+          many_results: '找到 [COUNT] 条结果',
+          one_result: '找到 1 条结果',
+          alt_search: '没有找到 “[SEARCH_TERM]”。改为搜索 “[DIFFERENT_TERM]”',
+          search_suggestion: '没有找到 “[SEARCH_TERM]”。可以尝试：',
+          searching: '正在搜索 “[SEARCH_TERM]”'
+        }
+      });
+
+      const query = new URLSearchParams(window.location.search).get('q');
+      if (!query) return;
+
+      window.setTimeout(() => {
+        const input = document.querySelector('#search input[type="text"], #search input[type="search"]');
+        if (!input) return;
+        input.value = query;
+        input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: query }));
+      }, 120);
+    });
+  </script>
+</BaseLayout>

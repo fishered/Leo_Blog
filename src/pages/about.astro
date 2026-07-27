@@ -1,0 +1,40 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { siteConfig } from '../config';
+const lang = 'zh';
+---
+
+<BaseLayout title="关于" description="关于 Leo 和这份持续更新的工程手记。" lang={lang}>
+  <article class="about-page shell">
+    <header>
+      <p class="eyebrow">About this notebook</p>
+      <h1>你好，我是 Leo。</h1>
+      <p class="lead">我把散落在不同平台的技术文章整理到这里，也记录正在发生的工程实践。</p>
+    </header>
+    <div class="about-grid">
+      <div class="prose">
+        <h2>为什么建立这个博客</h2>
+        <p>过去的文章分散在知乎、dev.to、博客园和其他平台。平台会变化，链接会失效，但 Markdown 可以长期保存，也能在不同工具之间自由迁移。</p>
+        <p>这里是这些内容的新家。旧文章会标记原始出处和发布时间；重新整理时产生的重要修订，也会明确记录。</p>
+        <h2>我会写什么</h2>
+        <p>主要关注软件开发、系统设计、Java、AI 辅助开发、开源工具，以及那些只有真正排查过才会理解的问题。</p>
+        <h2>内容原则</h2>
+        <ul>
+          <li>尽量解释判断过程，而不只给最终答案。</li>
+          <li>区分事实、经验和仍需验证的猜想。</li>
+          <li>发现错误时直接修订，并保留更新时间。</li>
+        </ul>
+        <p><a class="text-link" href={siteConfig.feedUrl} target="_blank" rel="noreferrer" title="复制到 Feedly、Inoreader 等 RSS 阅读器">使用阅读器订阅更新 →</a></p>
+      </div>
+      <aside class="about-facts">
+        <p class="eyebrow">Notebook index</p>
+        <dl>
+          <div><dt>位置</dt><dd>GitHub Pages</dd></div>
+          <div><dt>内容源</dt><dd>Markdown / MDX</dd></div>
+          <div><dt>更新方式</dt><dd>Git push</dd></div>
+          <div><dt>状态</dt><dd><span class="status-dot"></span> 持续整理</dd></div>
+        </dl>
+      </aside>
+    </div>
+  </article>
+</BaseLayout>

@@ -1,0 +1,110 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import FloatingTools from '../components/FloatingTools.astro';
+import DesktopWidgets from '../components/DesktopWidgets.astro';
+import '../styles/global.css';
+import { withBase } from '../lib/url';
+import { localizedSiteConfig } from '../config';
+import { getLangFromPath, switchLanguagePath, type Lang } from '../lib/i18n';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  type?: 'website' | 'article';
+  lang?: Lang;
+}
+
+const lang = Astro.props.lang ?? getLangFromPath(Astro.url.pathname);
+const siteConfig = localizedSiteConfig[lang];
+const {
+  title = siteConfig.title,
+  description = siteConfig.description,
+  image,
+  type = 'website',
+} = Astro.props;
+const fullTitle = title === siteConfig.title ? title : `${title} · ${siteConfig.title}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const imageUrl = image ? new URL(withBase(image), Astro.site) : new URL(withBase('/images/leo-study-hero-v2.png'), Astro.site);
+const normalizedPath = Astro.url.pathname.replace(import.meta.env.BASE_URL, '/') || '/';
+const isHome = normalizedPath === '/' || normalizedPath === '/en/';
+const alternateZh = new URL(switchLanguagePath(Astro.url.pathname, 'zh'), Astro.site);
+const alternateEn = new URL(switchLanguagePath(Astro.url.pathname, 'en'), Astro.site);
+---
+
+<!doctype html>
+<html lang={lang === 'en' ? 'en' : 'zh-CN'}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f7f9f8" />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="zh-CN" href={alternateZh} />
+    <link rel="alternate" hreflang="en" href={alternateEn} />
+    <link rel="alternate" hreflang="x-default" href={alternateZh} />
+    <link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
+    <link rel="alternate" type="application/rss+xml" title={siteConfig.title} href={siteConfig.feedUrl} />
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={imageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>{fullTitle}</title>
+    <script is:inline>
+      (() => {
+        const saved = localStorage.getItem('theme');
+        const dark = saved === 'dark' || (!saved && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      })();
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">{lang === 'en' ? 'Skip to content' : '跳到正文'}</a>
+    <Header isHome={isHome} lang={lang} />
+    <main id="main-content"><slot /></main>
+    <Footer lang={lang} />
+    <DesktopWidgets />
+    <FloatingTools lang={lang} />
+    <script>
+      const themeButtons = document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]');
+      const syncThemeLabels = () => {
+        const dark = document.documentElement.dataset.theme === 'dark';
+        themeButtons.forEach((button) => button.setAttribute('aria-label', dark ? '切换日间模式' : '切换夜间模式'));
+      };
+      syncThemeLabels();
+      themeButtons.forEach((button) => button.addEventListener('click', () => {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem('theme', next);
+        syncThemeLabels();
+      }));
+      document.querySelector('[data-scroll-top]')?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+      const originalTitle = document.title;
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          document.title = '下次再来看看呀…';
+          return;
+        }
+        document.title = '欢迎回来，天亮了';
+        window.setTimeout(() => { document.title = originalTitle; }, 1600);
+      });
+
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.addEventListener('pointerdown', (event) => {
+          if ((event.target as HTMLElement).closest('a, button, input')) return;
+          const spark = document.createElement('span');
+          spark.className = 'click-spark';
+          spark.style.left = `${event.clientX}px`;
+          spark.style.top = `${event.clientY}px`;
+          document.body.append(spark);
+          window.setTimeout(() => spark.remove(), 700);
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,40 @@
+---
+import type { Post } from '../lib/posts';
+import { formatDate } from '../lib/posts';
+import { ui, type Lang } from '../lib/i18n';
+
+interface Props { post: Post; lang?: Lang }
+const { post, lang = post.data.lang } = Astro.props;
+const t = ui[lang];
+---
+
+<aside class="provenance" aria-label={t.provenance.label}>
+  <p class="eyebrow">{t.provenance.eyebrow}</p>
+  <ol>
+    {post.data.source && (
+      <li>
+        <span class="timeline-dot"></span>
+        <div>
+          <small>{post.data.source.published ? formatDate(post.data.source.published, lang) : t.provenance.original}</small>
+          <p>{t.provenance.firstPublished} <a href={post.data.source.url} rel="canonical">{post.data.source.platform}</a></p>
+        </div>
+      </li>
+    )}
+    <li>
+      <span class="timeline-dot"></span>
+      <div>
+        <small>{formatDate(post.data.published, lang)}</small>
+        <p>{post.data.source ? t.provenance.migrated : t.provenance.publishedHere}</p>
+      </div>
+    </li>
+    {post.data.updated && post.data.updated.getTime() !== post.data.published.getTime() && (
+      <li>
+      <span class="timeline-dot"></span>
+      <div>
+          <small>{formatDate(post.data.updated, lang)}</small>
+          <p>{t.provenance.updated}</p>
+      </div>
+    </li>
+    )}
+  </ol>
+</aside>

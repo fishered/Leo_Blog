@@ -1,0 +1,163 @@
+---
+import { withBase } from '../lib/url';
+
+const base = import.meta.env.BASE_URL;
+const fallbackTracks = [
+  { name: 'Evening Code', artist: "Leo's Blog", url: withBase('/audio/evening-code.wav') },
+  { name: 'Rainy Debug', artist: "Leo's Blog", url: withBase('/audio/rainy-debug.wav') },
+  { name: 'Morning Terminal', artist: "Leo's Blog", url: withBase('/audio/morning-terminal.wav') },
+  { name: 'Midnight Compile', artist: "Leo's Blog", url: withBase('/audio/midnight-compile.wav') },
+];
+---
+
+<div
+  class="desktop-widgets"
+  data-desktop-widgets
+  data-base={base}
+  data-fallback-tracks={JSON.stringify(fallbackTracks)}
+>
+  <div
+    id="player"
+    class="aplayer aplayer-withlist aplayer-fixed"
+    data-id="3116636104"
+    data-server="netease"
+    data-type="playlist"
+    data-order="random"
+    data-fixed="true"
+    data-listfolded="true"
+    data-theme="#42756f"
+  ></div>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-desktop-widgets]');
+  const desktop = matchMedia('(min-width: 1001px)');
+
+  const loadDesktopWidgets = async () => {
+    if (!root || !desktop.matches || root.dataset.loaded === 'true') return;
+    root.dataset.loaded = 'true';
+
+    const base = root.dataset.base ?? '/';
+    const asset = (path: string) => `${base.replace(/\/$/, '')}${path}`;
+    function shuffle<T>(items: T[]) {
+      const result = [...items];
+      for (let index = result.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+      }
+      return result;
+    }
+    const loadScript = (src: string) => new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.addEventListener('load', () => resolve(), { once: true });
+      script.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)), { once: true });
+      document.head.append(script);
+    });
+
+    const playerStyle = document.createElement('link');
+    playerStyle.rel = 'stylesheet';
+    playerStyle.href = asset('/vendor/APlayer.min.css');
+    document.head.append(playerStyle);
+
+    try {
+      await loadScript(asset('/vendor/APlayer.min.js'));
+
+      // APlayer 的 random 只改变播放选择，不会改变访客看到的列表顺序。
+      // 在 Meting 创建实例前代理构造器，让网络歌单和本地歌单都真正洗牌。
+      type AudioItem = { name?: string; artist?: string; url?: string };
+      type PlayerOptions = Record<string, unknown> & { audio?: AudioItem[] };
+      type PlayerInstance = { destroy?: () => void };
+      type PlayerConstructor = new (options: PlayerOptions) => PlayerInstance;
+      const playerWindow = window as typeof window & {
+        APlayer?: PlayerConstructor;
+        aplayers?: Array<{ destroy: () => void }>;
+      };
+      const NativeAPlayer = playerWindow.APlayer;
+      if (NativeAPlayer) {
+        playerWindow.APlayer = new Proxy(NativeAPlayer, {
+          construct(Target, args: [PlayerOptions]) {
+            const [options] = args;
+            const randomizedOptions = Array.isArray(options?.audio) && options.audio.length > 1
+              ? { ...options, audio: shuffle(options.audio) }
+              : options;
+            return new Target(randomizedOptions);
+          },
+        });
+      }
+
+      await loadScript(asset('/vendor/Meting.min.js'));
+      const metingWindow = window as typeof window & { loadMeting?: () => void };
+      metingWindow.loadMeting?.();
+
+      const useFallbackTrack = () => {
+        if (root.dataset.fallback === 'true') return;
+        const container = document.querySelector<HTMLElement>('#player');
+        if (!container) return;
+        if (!playerWindow.APlayer) return;
+        const localTracks = JSON.parse(root.dataset.fallbackTracks ?? '[]') as AudioItem[];
+        if (!localTracks.length) return;
+        root.dataset.fallback = 'true';
+        playerWindow.aplayers?.forEach((player) => player.destroy());
+        playerWindow.aplayers = [];
+        container.innerHTML = '';
+        new playerWindow.APlayer({
+          container,
+          fixed: true,
+          listFolded: true,
+          theme: '#42756f',
+          order: 'random',
+          audio: shuffle(localTracks),
+        });
+      };
+
+      const playerWatchdog = window.setInterval(() => {
+        const container = document.querySelector<HTMLElement>('#player');
+        const notice = container?.querySelector<HTMLElement>('.aplayer-notice')?.textContent ?? '';
+        if (/audio error/i.test(notice)) {
+          window.clearInterval(playerWatchdog);
+          useFallbackTrack();
+        }
+      }, 250);
+
+      window.setTimeout(() => {
+        window.clearInterval(playerWatchdog);
+        const container = document.querySelector<HTMLElement>('#player');
+        if (!container?.querySelector('.aplayer-play')) useFallbackTrack();
+      }, 6000);
+    } catch (error) {
+      console.warn('APlayer could not be initialized.', error);
+    }
+
+    try {
+      await loadScript(asset('/vendor/L2Dwidget.min.js'));
+      const live2dWindow = window as typeof window & {
+        L2Dwidget?: { init: (options: object) => void };
+      };
+      live2dWindow.L2Dwidget?.init({
+        model: {
+          jsonPath: asset('/vendor/live2d/hijiki/assets/hijiki.model.json'),
+          scale: 1,
+        },
+        display: {
+          position: 'left',
+          width: 105,
+          height: 190,
+          hOffset: 4,
+          vOffset: -6,
+        },
+        mobile: { show: false },
+        react: {
+          opacityDefault: 1,
+          opacityOnHover: 0.82,
+        },
+      });
+    } catch (error) {
+      console.warn('Live2D could not be initialized.', error);
+    }
+  };
+
+  if (document.readyState === 'complete') loadDesktopWidgets();
+  else window.addEventListener('load', loadDesktopWidgets, { once: true });
+</script>

@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPublishedPosts, getAllTags } from '../../lib/posts';
+import { tagPath } from '../../lib/i18n';
+
+const lang = 'zh';
+const tags = getAllTags(await getPublishedPosts(lang));
+---
+
+<BaseLayout title="专题与标签" description="按技术主题浏览全部文章。" lang={lang}>
+  <header class="page-header shell">
+    <p class="eyebrow">Topic index</p>
+    <h1>专题与标签</h1>
+    <p>知识不是文件夹，但好的索引能让它更容易重逢。</p>
+  </header>
+  <section class="section shell">
+    <div class="tag-directory">
+      {tags.map(([tag, count], index) => (
+        <a href={tagPath(tag, lang)}>
+          <span class="tag-number">{String(index + 1).padStart(2, '0')}</span>
+          <strong>{tag}</strong>
+          <small>{count} 篇文章</small>
+          <b>↗</b>
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

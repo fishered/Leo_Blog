@@ -1,0 +1,82 @@
+---
+import { Github, Search } from 'lucide-astro';
+import { localizedSiteConfig } from '../config';
+import { withBase } from '../lib/url';
+import { localizedPath, switchLanguagePath, ui, type Lang } from '../lib/i18n';
+
+interface Props { isHome?: boolean; lang?: Lang }
+const { isHome = false, lang = 'zh' } = Astro.props;
+const t = ui[lang];
+const siteConfig = localizedSiteConfig[lang];
+const nav = [
+  [t.nav.home, '/'],
+  [t.nav.articles, '/articles/'],
+  [t.nav.tags, '/tags/'],
+  [t.nav.archive, '/archive/'],
+  [t.nav.about, '/about/'],
+];
+const switchTarget = lang === 'zh' ? 'en' : 'zh';
+const switchHref = switchLanguagePath(Astro.url.pathname, switchTarget);
+---
+
+<header class="site-header">
+  <div class:list={['site-hero', { compact: !isHome }]} style={`--hero-image: url("${withBase('/images/leo-study-hero-v2.png')}")`} data-hero>
+    <div class="hero-shade"></div>
+    {isHome && (
+      <div class="hero-atmosphere" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+    )}
+    <nav class="hero-nav shell" aria-label={lang === 'en' ? 'Main navigation' : '主导航'}>
+      <a class="nav-brand" href={localizedPath('/', lang)} aria-label={lang === 'en' ? 'Back to home' : '返回首页'}>
+        <strong>LEO</strong>
+        <span>FIELD NOTES</span>
+      </a>
+      <div class="nav-actions">
+        <div class="nav-links">
+          {nav.map(([label, href]) => <a href={localizedPath(href, lang)}>{label}</a>)}
+        </div>
+        <div class="nav-tools">
+          {siteConfig.github && (
+            <a class="nav-tool" href={siteConfig.github} target="_blank" rel="me noreferrer" aria-label="访问 Leo 的 GitHub" title="GitHub">
+              <Github size={17} stroke-width={1.8} />
+            </a>
+          )}
+          <a class="nav-tool" href={localizedPath('/search/', lang)} aria-label={t.nav.search} title={t.nav.search}>
+            <Search size={17} stroke-width={1.8} />
+          </a>
+          <a class="nav-tool lang-switch" href={switchHref} aria-label={lang === 'en' ? 'Switch to Chinese' : '切换到英文'} title={lang === 'en' ? '中文' : 'English'}>
+            {t.langSwitch}
+          </a>
+        </div>
+      </div>
+    </nav>
+    <div class="hero-content shell">
+      <div class="hero-identity">
+        <p class="hero-kicker">PERSONAL NOTES · SINCE 2024</p>
+        {isHome ? (
+          <h1>{siteConfig.displayName}<span>'s Blog</span></h1>
+        ) : (
+          <a class="hero-title" href={localizedPath('/', lang)} aria-label={lang === 'en' ? 'Back to home' : '返回首页'}>{siteConfig.displayName}'s Blog</a>
+        )}
+        <p class="hero-subtitle">{siteConfig.subtitle}</p>
+        {isHome && <p class="hero-topics">{t.heroTopics.map((topic) => <span>{topic}</span>)}</p>}
+      </div>
+    </div>
+    {isHome && <span class="hero-scroll" aria-hidden="true"><i></i>{t.keepScrolling}</span>}
+  </div>
+</header>
+
+<script>
+  const hero = document.querySelector<HTMLElement>('[data-hero]');
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (hero && !reducedMotion && hero.classList.contains('site-hero') && !hero.classList.contains('compact')) {
+    hero.addEventListener('pointermove', (event) => {
+      const rect = hero.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width - .5;
+      const y = (event.clientY - rect.top) / rect.height - .5;
+      hero.style.backgroundPosition = `${50 + x * 1.5}% ${50 + y * 1.2}%`;
+    });
+  }
+</script>

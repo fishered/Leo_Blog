@@ -1,0 +1,27 @@
+{
+  "name": "leo-field-notes",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "i18n:posts": "node scripts/generate_english_posts.mjs",
+    "topics:normalize": "node scripts/normalize_post_topics.mjs",
+    "i18n:check": "node scripts/check_english_posts.mjs",
+    "build": "astro check && astro build && pagefind --site dist",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/rss": "latest",
+    "@astrojs/sitemap": "latest",
+    "astro": "latest",
+    "lucide-astro": "^0.556.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "latest",
+    "pagefind": "latest",
+    "typescript": "latest"
+  }
+}

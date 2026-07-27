@@ -1,0 +1,55 @@
+---
+import { ArrowUpRight, BookOpenText, Github } from 'lucide-astro';
+import { localizedSiteConfig } from '../config';
+import { getPublishedPosts, getAllTags, type Post } from '../lib/posts';
+import { localizedPath, tagPath, ui, type Lang } from '../lib/i18n';
+import { withBase } from '../lib/url';
+
+interface Props { lang?: Lang; posts?: Post[] }
+const { lang = 'zh', posts: providedPosts } = Astro.props;
+const siteConfig = localizedSiteConfig[lang];
+const t = ui[lang];
+const posts = providedPosts ?? await getPublishedPosts(lang);
+const tags = getAllTags(posts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-CN'));
+---
+
+<aside class="home-sidebar" aria-label={lang === 'en' ? 'About Leo and topic index' : '关于 Leo 与主题索引'}>
+  <section class="sidebar-panel about-panel">
+    <p class="sidebar-eyebrow">ABOUT THE AUTHOR</p>
+    <div class="about-heading">
+      <img class="profile-mark" src={withBase(siteConfig.avatar)} alt={lang === 'en' ? "Leo's avatar" : 'Leo 的头像'} width="52" height="52" loading="lazy" decoding="async" />
+      <div>
+        <h2>{lang === 'en' ? "Hi, I'm Leo" : '你好，我是 Leo'}</h2>
+        <p>Developer · Writer</p>
+      </div>
+    </div>
+    <p>{siteConfig.notice}</p>
+    <a class="sidebar-more" href={localizedPath('/about/', lang)}>{lang === 'en' ? 'More about me' : '更多关于我'} <ArrowUpRight size={14} /></a>
+    <div class="social-links">
+      {siteConfig.github && <a href={siteConfig.github} target="_blank" rel="me noreferrer" title="GitHub" aria-label="访问 Leo 的 GitHub"><Github size={17} /></a>}
+      <a href={localizedPath('/articles/', lang)} title={t.nav.articles} aria-label={t.nav.articles}><BookOpenText size={17} /></a>
+    </div>
+  </section>
+
+  <section class="sidebar-panel tag-panel">
+    <p class="sidebar-eyebrow">TOPICS</p>
+    <div class="tag-panel-heading">
+      <h2>{lang === 'en' ? 'Frequent topics' : '常写的主题'}</h2>
+      <a href={localizedPath('/tags/', lang)}>{lang === 'en' ? 'All' : '全部'}</a>
+    </div>
+    <div class="sidebar-tags">
+      {tags.map(([tag, count]) => (
+        <a href={tagPath(tag, lang)}><span>{tag}</span><small>{count}</small></a>
+      ))}
+    </div>
+  </section>
+
+  <section class="sidebar-panel now-panel">
+    <p class="sidebar-eyebrow">NOW</p>
+    <p class="now-status"><span></span>{lang === 'en' ? 'Organizing older posts scattered across platforms' : '正在整理散落各处的旧文章'}</p>
+    <dl class="now-list">
+      <div><dt>{lang === 'en' ? 'Focus' : '近期关注'}</dt><dd>Astro · Java · AI</dd></div>
+      <div><dt>{lang === 'en' ? 'Cadence' : '更新节奏'}</dt><dd>{lang === 'en' ? 'Irregular, quality first' : '不定期，重质量'}</dd></div>
+    </dl>
+  </section>
+</aside>

@@ -1,0 +1,39 @@
+---
+import { ChevronLeft, ChevronRight } from 'lucide-astro';
+import { pagedPath, ui, type Lang } from '../lib/i18n';
+
+interface Props {
+  currentPage: number;
+  totalPages: number;
+  lang?: Lang;
+}
+
+const { currentPage, totalPages, lang = 'zh' } = Astro.props;
+const t = ui[lang];
+const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
+const pageHref = (page: number) => pagedPath(page, lang);
+---
+
+{totalPages > 1 && (
+  <nav class="pagination" aria-label={t.pagination.label}>
+    {currentPage > 1 ? (
+      <a class="pagination-arrow" href={pageHref(currentPage - 1)} aria-label={t.pagination.previous}>
+        <ChevronLeft size={17} />
+      </a>
+    ) : <span class="pagination-arrow disabled" aria-hidden="true"><ChevronLeft size={17} /></span>}
+
+    <div class="pagination-pages">
+      {pages.map((page) => (
+        page === currentPage
+          ? <span class="active" aria-current="page">{page}</span>
+          : <a href={pageHref(page)}>{page}</a>
+      ))}
+    </div>
+
+    {currentPage < totalPages ? (
+      <a class="pagination-arrow" href={pageHref(currentPage + 1)} aria-label={t.pagination.next}>
+        <ChevronRight size={17} />
+      </a>
+    ) : <span class="pagination-arrow disabled" aria-hidden="true"><ChevronRight size={17} /></span>}
+  </nav>
+)}

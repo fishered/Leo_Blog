@@ -1,0 +1,21 @@
+---
+import { ArrowUp, BookOpenText, Home, MoonStar, Search, Tags } from 'lucide-astro';
+import { localizedPath, ui, type Lang } from '../lib/i18n';
+interface Props { lang?: Lang }
+const { lang = 'zh' } = Astro.props;
+const t = ui[lang];
+---
+
+<nav class="floating-tools" aria-label={t.floating.label}>
+  <button type="button" data-scroll-top aria-label={t.floating.top} title={t.floating.top}><ArrowUp size={18} /></button>
+  <a href={localizedPath('/search/', lang)} aria-label={t.nav.search} title={t.nav.search}><Search size={18} /></a>
+  <a href={localizedPath('/tags/', lang)} aria-label={t.floating.tags} title={t.floating.tags}><Tags size={18} /></a>
+  <button type="button" data-theme-toggle aria-label={t.floating.theme} title={t.floating.theme}><MoonStar size={18} /></button>
+</nav>
+
+<nav class="mobile-dock" aria-label={t.floating.mobileLabel}>
+  <a href={localizedPath('/', lang)} aria-label={t.floating.home}><Home size={20} /><span>{t.floating.home}</span></a>
+  <a href={localizedPath('/articles/', lang)} aria-label={t.floating.articles}><BookOpenText size={20} /><span>{t.floating.articles}</span></a>
+  <a href={localizedPath('/search/', lang)} aria-label={t.floating.search}><Search size={20} /><span>{t.floating.search}</span></a>
+  <button type="button" data-theme-toggle aria-label={t.floating.theme}><MoonStar size={20} /><span>{t.floating.skin}</span></button>
+</nav>

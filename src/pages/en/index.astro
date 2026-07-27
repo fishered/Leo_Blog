@@ -1,0 +1,89 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Pagination from '../../components/Pagination.astro';
+import PostCard from '../../components/PostCard.astro';
+import Sidebar from '../../components/Sidebar.astro';
+import { localizedSiteConfig } from '../../config';
+import { ArrowUpRight, Clock3, Search } from 'lucide-astro';
+import { formatDate, getAllTags, getPublishedPosts, readingMinutes } from '../../lib/posts';
+import { localizedPath, postPath, tagPath } from '../../lib/i18n';
+
+const lang = 'en';
+const siteConfig = localizedSiteConfig[lang];
+const posts = await getPublishedPosts(lang);
+const pageSize = 9;
+const totalPages = Math.ceil(posts.length / pageSize);
+const pagePosts = posts.slice(0, pageSize);
+const featured = pagePosts[0];
+const recentPosts = pagePosts.slice(1);
+const topicCount = getAllTags(posts).length;
+---
+
+<BaseLayout lang={lang}>
+  <section class="home-intro shell" aria-label="Blog introduction">
+    <div class="intro-copy">
+      <p>This is my personal digital study.</p>
+      <span>{siteConfig.signature}</span>
+    </div>
+    <dl class="intro-stats" aria-label="Blog stats">
+      <div><dt>{posts.length}</dt><dd>posts</dd></div>
+      <div><dt>{topicCount}</dt><dd>topics</dd></div>
+      <div><dt>MD</dt><dd>writing flow</dd></div>
+    </dl>
+  </section>
+
+  <div class="home-layout shell">
+    <section class="home-posts" aria-labelledby="latest-title">
+      <div class="home-search" aria-label="Search posts" data-pagefind-ignore="all">
+        <form action={localizedPath('/search/', lang)} role="search">
+          <Search size={18} aria-hidden="true" />
+          <input name="q" type="search" placeholder="Search Java, RocketMQ, Agent, scheduling..." />
+          <button type="submit">Search</button>
+        </form>
+      </div>
+
+      <div class="content-heading">
+        <div>
+          <span>LATEST WRITING</span>
+          <h2 id="latest-title">Recent posts</h2>
+        </div>
+        <a href={localizedPath('/archive/', lang)}>Archive</a>
+      </div>
+
+      {featured && (
+        <article class="featured-post">
+          <p class="featured-label">01 · FEATURED NOTE</p>
+          <div class="featured-meta">
+            <time datetime={featured.data.published.toISOString()}>{formatDate(featured.data.published, lang)}</time>
+            <span><Clock3 size={13} />{readingMinutes(featured.body ?? '')} min read</span>
+            {featured.data.series && <span>{featured.data.series}</span>}
+          </div>
+          <h2><a href={postPath(featured.data.slug, lang)}>{featured.data.title}</a></h2>
+          <p>{featured.data.description}</p>
+          <div class="featured-footer">
+            <ul class="tag-list" aria-label="Post tags">
+              {featured.data.tags.map((tag) => (
+                <li><a href={tagPath(tag, lang)}>#{tag}</a></li>
+              ))}
+            </ul>
+            <a class="featured-link" href={postPath(featured.data.slug, lang)} aria-label={`Read ${featured.data.title}`}>
+              Read article <ArrowUpRight size={16} />
+            </a>
+          </div>
+        </article>
+      )}
+
+      {recentPosts.length > 0 && (
+        <div class="recent-writing">
+          <p class="recent-label">MORE RECENT NOTES</p>
+          <div class="post-list">
+            {recentPosts.map((post, index) => <PostCard post={post} order={index + 2} lang={lang} />)}
+          </div>
+        </div>
+      )}
+
+      <Pagination currentPage={1} totalPages={totalPages} lang={lang} />
+    </section>
+    <Sidebar lang={lang} posts={posts} />
+  </div>
+</BaseLayout>

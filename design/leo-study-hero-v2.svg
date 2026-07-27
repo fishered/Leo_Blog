@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="620" viewBox="0 0 1600 620">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#173f43"/>
+      <stop offset=".58" stop-color="#275b59"/>
+      <stop offset="1" stop-color="#396963"/>
+    </linearGradient>
+    <linearGradient id="night" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#617794"/>
+      <stop offset=".48" stop-color="#b27f8a"/>
+      <stop offset="1" stop-color="#e7a578"/>
+    </linearGradient>
+    <linearGradient id="desk" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#bc7b55"/>
+      <stop offset="1" stop-color="#78503f"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#142c32"/>
+      <stop offset="1" stop-color="#253e46"/>
+    </linearGradient>
+    <radialGradient id="lampGlow">
+      <stop stop-color="#ffd893" stop-opacity=".82"/>
+      <stop offset=".5" stop-color="#efad68" stop-opacity=".26"/>
+      <stop offset="1" stop-color="#efad68" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="15"/>
+    </filter>
+    <filter id="shadow" x="-30%" y="-30%" width="170%" height="190%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#102d30" flood-opacity=".38"/>
+    </filter>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="3" seed="29" result="noise"/>
+      <feColorMatrix in="noise" type="saturate" values="0" result="gray"/>
+      <feComponentTransfer in="gray"><feFuncA type="table" tableValues="0 .05"/></feComponentTransfer>
+    </filter>
+    <clipPath id="windowClip"><rect x="970" y="55" width="510" height="330" rx="8"/></clipPath>
+  </defs>
+
+  <rect width="1600" height="620" fill="url(#wall)"/>
+  <path d="M0 0h725l-265 620H0Z" fill="#102f34" opacity=".42"/>
+  <circle cx="1070" cy="310" r="330" fill="url(#lampGlow)" opacity=".34"/>
+
+  <!-- quiet wall details leave the left side readable for the blog title -->
+  <g opacity=".42" fill="none" stroke="#9bc1ae" stroke-width="2">
+    <path d="M105 139h145v112H105z"/>
+    <circle cx="141" cy="178" r="13"/>
+    <path d="m165 217 24-38 24 22 18-27"/>
+    <path d="M322 104h88M322 124h58M322 144h72" opacity=".55"/>
+  </g>
+  <g fill="#d4af76" opacity=".6">
+    <circle cx="292" cy="105" r="3"/><circle cx="430" cy="174" r="2.5"/><circle cx="218" cy="303" r="2"/>
+  </g>
+
+  <!-- dusk window -->
+  <g filter="url(#shadow)">
+    <rect x="950" y="35" width="550" height="370" rx="12" fill="#15363a"/>
+    <rect x="970" y="55" width="510" height="330" rx="8" fill="url(#night)"/>
+    <g clip-path="url(#windowClip)">
+      <circle cx="1360" cy="120" r="31" fill="#f7d69a" opacity=".83"/>
+      <g fill="#f8e6c3" opacity=".62">
+        <circle cx="1040" cy="102" r="2"/><circle cx="1110" cy="88" r="1.6"/><circle cx="1195" cy="135" r="1.8"/>
+        <circle cx="1287" cy="78" r="2"/><circle cx="1434" cy="178" r="1.7"/>
+      </g>
+      <path d="M970 272 1037 213l51 41 78-74 69 72 85-48 72 66 88-77v192H970Z" fill="#4b5f70" opacity=".52"/>
+      <path d="M970 308 1046 249l70 66 81-48 63 48 93-72 65 66 62-35v111H970Z" fill="#364f5d"/>
+      <g fill="#263f4a">
+        <rect x="987" y="283" width="58" height="102"/><rect x="1058" y="307" width="72" height="78"/>
+        <rect x="1145" y="273" width="53" height="112"/><rect x="1215" y="317" width="84" height="68"/>
+        <rect x="1320" y="280" width="64" height="105"/><rect x="1398" y="301" width="82" height="84"/>
+      </g>
+      <g fill="#f3bf75" opacity=".78">
+        <rect x="1000" y="303" width="7" height="9"/><rect x="1022" y="329" width="7" height="9"/>
+        <rect x="1074" y="324" width="8" height="9"/><rect x="1102" y="344" width="8" height="9"/>
+        <rect x="1161" y="294" width="7" height="9"/><rect x="1180" y="325" width="7" height="9"/>
+        <rect x="1233" y="335" width="8" height="9"/><rect x="1270" y="352" width="8" height="9"/>
+        <rect x="1338" y="300" width="7" height="9"/><rect x="1360" y="334" width="7" height="9"/>
+        <rect x="1416" y="324" width="8" height="9"/><rect x="1450" y="348" width="8" height="9"/>
+      </g>
+    </g>
+    <path d="M1218 55v330M970 222h510" stroke="#18383c" stroke-width="13"/>
+    <path d="M970 55h510v330H970z" fill="none" stroke="#78938c" stroke-width="3" opacity=".45"/>
+  </g>
+
+  <!-- shelves and tactile personal objects -->
+  <g filter="url(#shadow)">
+    <rect x="545" y="107" width="316" height="16" rx="4" fill="#a56c50"/>
+    <rect x="575" y="51" width="29" height="56" rx="2" fill="#d17c70"/>
+    <rect x="608" y="63" width="24" height="44" rx="2" fill="#d7b46d"/>
+    <rect x="636" y="44" width="32" height="63" rx="2" fill="#779c91"/>
+    <path d="M690 107c2-41 18-66 49-75 26 16 37 42 31 75Z" fill="#718f6d"/>
+    <path d="M730 107V49M730 72l-24-16M731 81l29-20" stroke="#315d54" stroke-width="5" stroke-linecap="round"/>
+    <path d="M696 107h70l-8 38h-54Z" fill="#d5a071"/>
+    <rect x="796" y="68" width="37" height="39" rx="4" fill="#d9cec0"/>
+    <path d="M805 81h20M805 91h14" stroke="#9c7d6a" stroke-width="3"/>
+  </g>
+
+  <!-- desk -->
+  <g filter="url(#shadow)">
+    <path d="M470 449h1072v52H470Z" fill="url(#desk)"/>
+    <path d="M500 501h36l-23 119h-39ZM1467 501h36l26 119h-39Z" fill="#553d34"/>
+    <path d="M470 449h1072v9H470Z" fill="#d79a69"/>
+  </g>
+
+  <!-- lamp -->
+  <g filter="url(#shadow)">
+    <ellipse cx="843" cy="331" rx="218" ry="191" fill="url(#lampGlow)" opacity=".72" filter="url(#soft)"/>
+    <path d="M740 440h107M793 440V284l79-78" stroke="#d8b078" stroke-width="12" stroke-linecap="round"/>
+    <path d="m838 205 74-51 39 60-91 30Z" fill="#e7b96e"/>
+    <circle cx="794" cy="283" r="15" fill="#b77a56"/>
+    <rect x="750" y="427" width="88" height="20" rx="10" fill="#bd7959"/>
+  </g>
+
+  <!-- coding monitor -->
+  <g filter="url(#shadow)">
+    <rect x="940" y="243" width="330" height="205" rx="14" fill="#d6c6ae"/>
+    <rect x="956" y="259" width="298" height="170" rx="7" fill="url(#screen)"/>
+    <circle cx="972" cy="274" r="3.5" fill="#e78379"/><circle cx="984" cy="274" r="3.5" fill="#e4b667"/><circle cx="996" cy="274" r="3.5" fill="#79b49e"/>
+    <g fill="none" stroke-linecap="round" stroke-width="6">
+      <path d="M991 305h67M1071 305h38" stroke="#e6ba79"/>
+      <path d="M1009 331h58M1080 331h91" stroke="#7cb5a2"/>
+      <path d="M1009 357h95M1117 357h49" stroke="#d99086"/>
+      <path d="M991 383h43M1047 383h119" stroke="#889fca"/>
+      <path d="M1009 409h79" stroke="#7cb5a2"/>
+    </g>
+    <path d="M1085 448h40l10 34h-60Z" fill="#b4a793"/>
+    <rect x="1045" y="480" width="130" height="13" rx="6" fill="#cbb99f"/>
+  </g>
+
+  <!-- books, notebook, coffee, and plant -->
+  <g filter="url(#shadow)">
+    <rect x="590" y="409" width="142" height="39" rx="4" fill="#d7b46d"/>
+    <rect x="610" y="373" width="122" height="36" rx="4" fill="#c8756b"/>
+    <path d="M622 390h63" stroke="#f3dbb4" stroke-width="4" opacity=".7"/>
+    <path d="M1286 425h142l-10 23h-132Z" fill="#d7cbb7"/>
+    <path d="M1305 435c32-13 61-13 91 0" fill="none" stroke="#6f8d86" stroke-width="3"/>
+    <path d="M1374 366h62v71h-62Z" fill="#ddba83"/>
+    <path d="M1435 382h18c19 0 19 37 0 37h-18" fill="none" stroke="#ddba83" stroke-width="10"/>
+    <path d="M1393 353c-10-17 11-23 1-40M1413 353c-9-15 10-21 1-36" fill="none" stroke="#e9d7b6" stroke-width="4" stroke-linecap="round" opacity=".62"/>
+    <path d="M1514 448h-78l9-57h60Z" fill="#d69a6c"/>
+    <path d="M1477 391c-3-46-35-65-45-101 36 4 55 31 54 63 11-38 34-54 62-62-4 42-24 72-56 100Z" fill="#7aa27e"/>
+    <path d="M1483 390v-76M1482 357l-35-37M1484 348l39-35" stroke="#426e60" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- small foreground cable adds a lived-in technical detail -->
+  <path d="M1220 448c20 19 37 24 66 21 24-3 47 1 64 17" fill="none" stroke="#334c4b" stroke-width="5" stroke-linecap="round"/>
+  <rect width="1600" height="620" filter="url(#grain)" opacity=".7"/>
+</svg>

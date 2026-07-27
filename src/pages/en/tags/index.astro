@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getPublishedPosts, getAllTags } from '../../../lib/posts';
+import { tagPath } from '../../../lib/i18n';
+
+const lang = 'en';
+const tags = getAllTags(await getPublishedPosts(lang));
+---
+
+<BaseLayout title="Topics" description="Browse all posts by technical topic." lang={lang}>
+  <header class="page-header shell">
+    <p class="eyebrow">Topic index</p>
+    <h1>Topics</h1>
+    <p>Knowledge is not a folder, but a good index makes it easier to meet again.</p>
+  </header>
+  <section class="section shell">
+    <div class="tag-directory">
+      {tags.map(([tag, count], index) => (
+        <a href={tagPath(tag, lang)}>
+          <span class="tag-number">{String(index + 1).padStart(2, '0')}</span>
+          <strong>{tag}</strong>
+          <small>{count} posts</small>
+          <b>↗</b>
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
