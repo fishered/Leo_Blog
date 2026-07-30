@@ -25,32 +25,6 @@ export const PLATFORM_CONFIGS = {
     publishButtonNames: [/发布/, /Publish/i],
   },
 
-  csdn: {
-    id: 'csdn',
-    name: 'CSDN',
-    language: 'zh',
-    aliases: ['csdn', 'CSDN'],
-    homeUrl: 'https://www.csdn.net',
-    loginUrl: 'https://passport.csdn.net/login',
-    searchUrl: (title) => `https://so.csdn.net/so/search?q=${encodeURIComponent(title)}&t=blog`,
-    newPostUrl: 'https://mp.csdn.net/mp_blog/creation/editor',
-    pasteMode: 'markdown',
-    titleSelectors: [
-      'input[placeholder*="标题"]',
-      'textarea[placeholder*="标题"]',
-      'input.article-bar__title',
-      '.article-bar input',
-    ],
-    bodySelectors: [
-      '.editor-content [contenteditable="true"]',
-      '.bytemd-editor .cm-content',
-      '.CodeMirror textarea',
-      'textarea',
-      '[contenteditable="true"]',
-    ],
-    publishButtonNames: [/发布/, /Publish/i],
-  },
-
   cnblogs: {
     id: 'cnblogs',
     name: 'Cnblogs',
@@ -112,6 +86,7 @@ export const PLATFORM_CONFIGS = {
     homeUrl: 'https://dev.to',
     loginUrl: 'https://dev.to/enter',
     searchUrl: (title) => `https://dev.to/search?q=${encodeURIComponent(title)}`,
+    dashboardUrl: 'https://dev.to/dashboard',
     newPostUrl: 'https://dev.to/new',
     pasteMode: 'markdown',
     titleSelectors: [
@@ -126,7 +101,16 @@ export const PLATFORM_CONFIGS = {
       'textarea',
       '[contenteditable="true"]',
     ],
+    tagSelectors: [
+      'input[name="tag_list"]',
+      'input#tag-input',
+      'input[placeholder*="tags"]',
+      'input[placeholder*="Add up to"]',
+      '[data-testid*="tag"] input',
+    ],
     publishButtonNames: [/Publish/i, /Save changes/i],
+    confirmPublishButtonNames: [/Publish/i, /Confirm/i, /Yes, publish/i],
+    successUrlPattern: /^https:\/\/dev\.to\/[^/]+\/[^/]+/i,
   },
 };
 

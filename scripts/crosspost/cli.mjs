@@ -149,6 +149,10 @@ async function runPublish(args) {
   if (!args.platform) throw new Error('publish requires --platform');
   const platform = getPlatform(args.platform);
   const posts = await collect(platform, args);
+  if (!posts.length) {
+    console.log(`[${platform.id}] no matching posts`);
+    return;
+  }
   const context = await launchChrome({ headless: args.headless === true });
   const limit = args.limit ? Number(args.limit) : Number.POSITIVE_INFINITY;
   let publishedOrPrepared = 0;
@@ -186,6 +190,10 @@ async function runPublish(args) {
         skipRemoteDuplicateCheck: args.skipRemoteDuplicateCheck === true,
       });
       console.log(`[${platform.id}] ${post.slug}: ${result.status}${result.reason ? ` (${result.reason})` : ''} ${result.url ?? ''}`);
+      if (result.status === 'blocked') {
+        process.exitCode = 1;
+        break;
+      }
       if (result.status === 'published' || result.status === 'prepared') publishedOrPrepared += 1;
     }
   } finally {

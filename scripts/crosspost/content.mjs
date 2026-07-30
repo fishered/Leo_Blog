@@ -401,16 +401,46 @@ export async function prepareArticleForPlatform(post, platform, options = {}) {
   };
 }
 
-export async function verifyRemoteAssets(urls) {
-  const checks = await Promise.all(
-    urls.map(async (url) => {
-      try {
-        const response = await fetch(url, { method: 'GET' });
-        return { url, ok: response.ok, status: response.status };
-      } catch (error) {
-        return { url, ok: false, error: error.message };
-      }
-    }),
-  );
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function verifyRemoteAsset(url, options = {}) {
+  const retries = Number(options.retries ?? 2);
+  const timeoutMs = Number(options.timeoutMs ?? 15000);
+  let lastError;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: {
+          'user-agent': 'Leo_Blog crosspost asset verifier',
+        },
+      });
+      clearTimeout(timeout);
+      if (response.ok) return { url, ok: true, status: response.status };
+      lastError = `HTTP ${response.status}`;
+      if (response.status >= 400 && response.status < 500) break;
+    } catch (error) {
+      clearTimeout(timeout);
+      lastError = error.message;
+    }
+
+    if (attempt < retries) await sleep(800 * (attempt + 1));
+  }
+
+  return { url, ok: false, error: lastError ?? 'fetch failed' };
+}
+
+export async function verifyRemoteAssets(urls, options = {}) {
+  const uniqueUrls = [...new Set(urls)];
+  const checks = [];
+  for (const url of uniqueUrls) {
+    checks.push(await verifyRemoteAsset(url, options));
+  }
   return checks;
 }
