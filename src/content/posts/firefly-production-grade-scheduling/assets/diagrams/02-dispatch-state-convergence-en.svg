@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="740" viewBox="0 0 1500 740" role="img" aria-labelledby="title desc">
+  <title id="title">Firefly dispatch retry and execution-state convergence</title>
+  <desc id="desc">Shows how a remote execution starts in DISPATCHING and converges through Executor ACK, Outbox retry, capacity rejection, handler result, or execution deadline to SUCCEEDED, FAILED, DEAD, or TIMED_OUT.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#315f57"/></marker>
+    <marker id="arrow-warn" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c95447"/></marker>
+    <style>
+      .title { font: 700 30px Inter, "Segoe UI", sans-serif; fill: #16231f; }
+      .subtitle { font: 16px Inter, "Segoe UI", sans-serif; fill: #60706b; }
+      .heading { font: 700 19px Inter, "Segoe UI", sans-serif; fill: #17231f; }
+      .body { font: 15px Inter, "Segoe UI", sans-serif; fill: #465650; }
+      .small { font: 14px Inter, "Segoe UI", sans-serif; fill: #5d6b67; }
+      .mono { font: 15px Consolas, "SFMono-Regular", monospace; fill: #20332d; }
+      .line { fill: none; stroke: #315f57; stroke-width: 3; marker-end: url(#arrow); }
+      .warn { fill: none; stroke: #c95447; stroke-width: 2.5; marker-end: url(#arrow-warn); }
+      .dash { stroke-dasharray: 8 6; }
+    </style>
+  </defs>
+
+  <rect width="1500" height="740" fill="#fbfaf7"/>
+  <text x="60" y="52" class="title">Dispatch retry and execution-state convergence</text>
+  <text x="60" y="80" class="subtitle">A delivery may be retried, but each send window and the complete task attempt must have a deterministic exit</text>
+
+  <rect x="42" y="108" width="1416" height="402" rx="8" fill="#f5f8f7" stroke="#dae5e1"/>
+  <circle cx="82" cy="211" r="18" fill="#315f57"/>
+  <path d="M100 211 H145" class="line"/>
+  <text x="55" y="250" class="small">Create remote task</text>
+
+  <rect x="145" y="151" width="245" height="120" rx="7" fill="#fff9eb" stroke="#e2b959" stroke-width="3"/>
+  <text x="177" y="189" class="heading">Execution</text>
+  <text x="177" y="220" class="mono">DISPATCHING</text>
+  <text x="177" y="250" class="small">Persist timeout_at</text>
+
+  <path d="M390 211 H485" class="line"/>
+  <text x="407" y="196" class="small">Outbox send</text>
+
+  <path d="M535 166 L585 211 L535 256 L485 211 Z" fill="#ffffff" stroke="#4fa9cf" stroke-width="3"/>
+  <text x="513" y="206" class="heading">ACK</text>
+  <text x="507" y="228" class="small">decision</text>
+
+  <path d="M585 211 H680" class="line"/>
+  <text x="599" y="194" class="small">accepted=true</text>
+  <rect x="680" y="151" width="220" height="120" rx="7" fill="#edf7f3" stroke="#63a894" stroke-width="3"/>
+  <text x="713" y="189" class="heading">Execution</text>
+  <text x="713" y="220" class="mono">RUNNING</text>
+  <text x="713" y="250" class="small">Bounded by runningSlots</text>
+
+  <path d="M900 185 H1070" class="line"/>
+  <text x="940" y="168" class="small">RESULT success</text>
+  <rect x="1070" y="128" width="260" height="92" rx="7" fill="#eef8eb" stroke="#74b361" stroke-width="3"/>
+  <text x="1100" y="164" class="heading">Terminal</text>
+  <text x="1100" y="195" class="mono">SUCCEEDED</text>
+
+  <path d="M900 242 C980 242 985 330 1070 330" class="warn"/>
+  <text x="932" y="277" class="small">Handler error</text>
+  <rect x="1070" y="284" width="260" height="92" rx="7" fill="#fff1ee" stroke="#d97869" stroke-width="3"/>
+  <text x="1100" y="320" class="heading">Terminal</text>
+  <text x="1100" y="351" class="mono">FAILED</text>
+
+  <path d="M510 244 C475 287 443 302 410 335" class="warn"/>
+  <text x="260" y="306" class="small">Gateway rejection / ACK timeout</text>
+  <rect x="275" y="335" width="270" height="112" rx="7" fill="#fff8e8" stroke="#dcae4e" stroke-width="2"/>
+  <text x="302" y="371" class="heading">Outbox RETRY</text>
+  <text x="302" y="402" class="mono">attempt + 1 · backoff</text>
+  <text x="302" y="430" class="small">Only real failures consume attempts</text>
+
+  <path d="M345 335 C265 315 230 305 230 271" class="line"/>
+  <text x="176" y="317" class="small">attempts remain</text>
+  <path d="M545 391 H675" class="warn"/>
+  <text x="569" y="376" class="small">max-attempts</text>
+  <rect x="675" y="335" width="220" height="112" rx="7" fill="#fff1ee" stroke="#d97869" stroke-width="2"/>
+  <text x="710" y="374" class="heading">Outbox DEAD</text>
+  <text x="710" y="405" class="body">Stop automatic sends</text>
+  <text x="710" y="432" class="small">Execution converges to failure</text>
+  <path d="M895 391 C970 391 990 350 1070 345" class="warn"/>
+
+  <path d="M535 256 C600 303 780 312 1010 330" class="warn dash"/>
+  <text x="615" y="294" class="small" fill="#a13e35">accepted=false · executor_overloaded → persist an explicit failure result</text>
+
+  <rect x="42" y="535" width="1416" height="158" rx="8" fill="#ffffff" stroke="#dae5e1"/>
+  <rect x="65" y="564" width="380" height="102" rx="7" fill="#eef5f8" stroke="#91bdcf"/>
+  <text x="90" y="597" class="heading">Delivery clock · ACK deadline</text>
+  <text x="90" y="626" class="mono">remote-ack-timeout = PT10S</text>
+  <text x="90" y="652" class="small">Bounds one send with max-attempts and backoff</text>
+
+  <rect x="480" y="564" width="410" height="102" rx="7" fill="#fff9eb" stroke="#dfbd67"/>
+  <text x="505" y="597" class="heading">Task clock · execution deadline</text>
+  <text x="505" y="626" class="mono">timeout_at · default timeout = 5 min</text>
+  <text x="505" y="652" class="small">Maintenance scans DISPATCHING / RUNNING every 5s</text>
+
+  <rect x="1090" y="564" width="300" height="102" rx="7" fill="#fff1ee" stroke="#d97869" stroke-width="2"/>
+  <text x="1120" y="600" class="heading">Terminal</text>
+  <text x="1120" y="633" class="mono">TIMED_OUT</text>
+  <text x="1120" y="658" class="small">No immortal transitional state</text>
+
+  <path d="M445 615 H480" class="line"/>
+  <text x="449" y="601" class="small">layered</text>
+  <path d="M890 615 H1090" class="warn"/>
+  <path d="M685 564 C650 500 395 492 300 271" class="warn dash"/>
+  <path d="M780 564 C820 505 810 390 790 271" class="warn dash"/>
+</svg>

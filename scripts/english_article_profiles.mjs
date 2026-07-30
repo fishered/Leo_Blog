@@ -959,6 +959,32 @@ export const englishArticleProfiles = {
       'Use stress tests to expose missing synchronization.'
     ]
   },
+  'firefly-production-grade-scheduling': {
+    title: 'From Overload Protection to Health Checks: Production-Grade Scheduling in Firefly',
+    topic: 'Scheduling',
+    description: 'This article examines how Firefly turns production boundaries into configurable, observable, and verifiable capabilities through bounded executors, dispatch deadlines, schema migrations, secure startup, and dependency-aware health states.',
+    summary: 'This article explains how Firefly makes overload, dispatch timeout, schema evolution, security startup checks, and readiness behavior explicit enough to operate and verify.',
+    audience: 'Backend engineers and platform engineers evaluating production readiness in Java scheduling systems.',
+    thesis: 'Scheduler reliability is not another retry loop. It is the ability to reject overload, converge transitional states, advance schema versions safely, and expose real dependency failures through health signals.',
+    walkthrough: [
+      'Introduce executor admission through fixed worker threads, bounded queues, fail-fast rejection, and semaphores around accepted and running work.',
+      'Explain why DISPATCHING remains transitional and how ACK deadlines, Outbox attempts, and execution deadlines converge it to terminal states.',
+      'Show database migration as a replayable sequence of dialect-specific SQL versions instead of a manual patch.',
+      'Connect startup security checks and Spring Boot health indicators to production readiness rather than process liveness alone.'
+    ],
+    tradeoffs: [
+      'Bounded admission exposes capacity shortages earlier, but that explicit failure is safer than unbounded thread or queue growth.',
+      'Reliable dispatch still requires idempotent handlers and workload-aware timeout settings.',
+      'Health checks can affect restart and routing behavior, so liveness and readiness should be designed separately.'
+    ],
+    validation: [
+      'Alert on active executions, queued executions, overload ACKs, Outbox oldest age, and DEAD records.',
+      'Verify that dispatch ACK deadlines and job-level execution timeouts are configured for the workload.',
+      'Back up existing databases and confirm schema version 12 after upgrade.',
+      'Use unique production secrets and change the bootstrap administrator password on first login.',
+      'Treat published SLO targets as test objectives until measured in the target deployment environment.'
+    ]
+  },
   'zhihu-677750590': {
     title: 'Dissecting the Principles of AQS',
     topic: 'JUC',

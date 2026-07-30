@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
+    "dev": "astro dev --host 127.0.0.1 --port 4521",
+    "start": "astro dev --host 127.0.0.1 --port 4521",
     "i18n:posts": "node scripts/generate_english_posts.mjs",
     "topics:normalize": "node scripts/normalize_post_topics.mjs",
     "i18n:check": "node scripts/check_english_posts.mjs",

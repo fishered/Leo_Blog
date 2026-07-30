@@ -1,0 +1,71 @@
+{
+  "article": "firefly-production-grade-scheduling",
+  "assets": [
+    {
+      "file": "assets/diagrams/01-production-architecture-zh.svg",
+      "type": "diagram",
+      "source": "Firefly source implementation",
+      "purpose": "Explain the end-to-end scheduling path and its operational boundaries",
+      "alt_zh": "Firefly 生产级调度架构与关键边界",
+      "alt_en": "Firefly production scheduling architecture and explicit boundaries",
+      "language": "zh"
+    },
+    {
+      "file": "assets/diagrams/01-production-architecture-en.svg",
+      "type": "diagram",
+      "source": "Firefly source implementation",
+      "purpose": "Explain the end-to-end scheduling path and its operational boundaries",
+      "alt_zh": "Firefly 生产级调度架构与关键边界",
+      "alt_en": "Firefly production scheduling architecture and explicit boundaries",
+      "language": "en"
+    },
+    {
+      "file": "assets/diagrams/02-dispatch-state-convergence-zh.svg",
+      "type": "diagram",
+      "source": "Firefly source implementation",
+      "purpose": "Show how delivery retries and execution deadlines converge transitional states",
+      "alt_zh": "Firefly 派发重试与执行状态收敛设计",
+      "alt_en": "Firefly dispatch retries and execution-state convergence",
+      "language": "zh"
+    },
+    {
+      "file": "assets/diagrams/02-dispatch-state-convergence-en.svg",
+      "type": "diagram",
+      "source": "Firefly source implementation",
+      "purpose": "Show how delivery retries and execution deadlines converge transitional states",
+      "alt_zh": "Firefly 派发重试与执行状态收敛设计",
+      "alt_en": "Firefly dispatch retries and execution-state convergence",
+      "language": "en"
+    },
+    {
+      "file": "assets/diagrams/03-firefly-production-boundaries-excalidraw.png",
+      "type": "diagram",
+      "source": "Original Excalidraw diagram based on the Firefly implementation",
+      "editable_source": "assets/excalidraw/03-firefly-production-boundaries.excalidraw",
+      "purpose": "Summarize capacity, time, state, and operational boundaries as a compact mental model",
+      "alt_zh": "Firefly 四类生产边界的 Excalidraw 手绘概览",
+      "alt_en": "Excalidraw overview of Firefly's four production boundaries",
+      "language": "bilingual"
+    },
+    {
+      "file": "assets/diagrams/04-firefly-two-clocks-excalidraw.png",
+      "type": "diagram",
+      "source": "Original Excalidraw diagram based on the Firefly implementation",
+      "editable_source": "assets/excalidraw/04-firefly-two-clocks.excalidraw",
+      "purpose": "Distinguish the delivery ACK deadline from the task execution timeout",
+      "alt_zh": "Firefly ACK deadline 与 execution timeout 双时钟模型",
+      "alt_en": "Firefly ACK deadline and execution timeout two-clock model",
+      "language": "bilingual"
+    },
+    {
+      "file": "assets/diagrams/05-firefly-startup-readiness-excalidraw.png",
+      "type": "diagram",
+      "source": "Original Excalidraw diagram based on the Firefly implementation",
+      "editable_source": "assets/excalidraw/05-firefly-startup-readiness.excalidraw",
+      "purpose": "Explain secure-startup enforcement and runtime readiness decisions",
+      "alt_zh": "Firefly 安全启动与 readiness 决策流程",
+      "alt_en": "Firefly secure startup and readiness decision flow",
+      "language": "bilingual"
+    }
+  ]
+}

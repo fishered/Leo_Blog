@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="820" viewBox="0 0 1500 820" role="img" aria-labelledby="title desc">
+  <title id="title">Firefly production scheduling architecture and explicit boundaries</title>
+  <desc id="desc">Shows the relationship between Scheduler, transactional Execution and Outbox records, Gateway, bounded Executor admission, handlers, schema migration, secure startup, health checks, and metrics.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#315f57"/>
+    </marker>
+    <marker id="arrow-warn" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c95447"/>
+    </marker>
+    <style>
+      .title { font: 700 30px Inter, "Segoe UI", sans-serif; fill: #16231f; }
+      .subtitle { font: 16px Inter, "Segoe UI", sans-serif; fill: #60706b; }
+      .lane { font: 700 15px Inter, "Segoe UI", sans-serif; fill: #315f57; letter-spacing: 1px; }
+      .heading { font: 700 19px Inter, "Segoe UI", sans-serif; fill: #17231f; }
+      .body { font: 15px Inter, "Segoe UI", sans-serif; fill: #465650; }
+      .small { font: 14px Inter, "Segoe UI", sans-serif; fill: #5d6b67; }
+      .mono { font: 14px Consolas, "SFMono-Regular", monospace; fill: #20332d; }
+      .box { fill: #ffffff; stroke: #b8c9c4; stroke-width: 2; }
+      .line { fill: none; stroke: #315f57; stroke-width: 3; marker-end: url(#arrow); }
+      .soft-line { fill: none; stroke: #7a9690; stroke-width: 2; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+      .warn-line { fill: none; stroke: #c95447; stroke-width: 2.5; stroke-dasharray: 8 6; marker-end: url(#arrow-warn); }
+    </style>
+  </defs>
+
+  <rect width="1500" height="820" fill="#fbfaf7"/>
+  <text x="60" y="52" class="title">Firefly production scheduling architecture</text>
+  <text x="60" y="80" class="subtitle">Resource, time, state, and operational truth become boundaries the system can enforce and verify</text>
+
+  <rect x="40" y="104" width="1420" height="314" rx="8" fill="#f4f8f6" stroke="#d9e4e0"/>
+  <text x="62" y="132" class="lane">PRIMARY DISPATCH PATH</text>
+
+  <rect x="60" y="170" width="180" height="128" rx="7" class="box" stroke="#6fbf5c"/>
+  <circle cx="88" cy="197" r="14" fill="#e5f4df"/>
+  <text x="83" y="202" class="small" font-weight="700">1</text>
+  <text x="112" y="204" class="heading">Scheduler</text>
+  <text x="84" y="240" class="body">Create remote execution</text>
+  <text x="84" y="267" class="mono">timeout_at</text>
+
+  <rect x="285" y="146" width="240" height="176" rx="7" class="box" stroke="#e4ae45"/>
+  <circle cx="313" cy="173" r="14" fill="#fff0cf"/>
+  <text x="308" y="178" class="small" font-weight="700">2</text>
+  <text x="337" y="180" class="heading">JDBC transaction</text>
+  <rect x="309" y="199" width="192" height="42" rx="4" fill="#fff9eb" stroke="#efd28e"/>
+  <text x="327" y="225" class="mono">Execution: DISPATCHING</text>
+  <rect x="309" y="252" width="192" height="42" rx="4" fill="#fff9eb" stroke="#efd28e"/>
+  <text x="327" y="278" class="mono">Outbox: PENDING</text>
+  <text x="315" y="312" class="small">State and delivery intent persist together</text>
+
+  <rect x="570" y="170" width="190" height="128" rx="7" class="box" stroke="#dc8d58"/>
+  <text x="594" y="205" class="heading">Outbox Dispatcher</text>
+  <text x="594" y="239" class="body">Durable retry / backoff</text>
+  <text x="594" y="268" class="mono">PENDING → RETRY → DEAD</text>
+
+  <rect x="805" y="170" width="180" height="128" rx="7" class="box" stroke="#4fa9cf"/>
+  <text x="842" y="205" class="heading">Gateway</text>
+  <text x="830" y="239" class="body">Instance selection + route</text>
+  <text x="830" y="268" class="mono">ACK tracking</text>
+
+  <rect x="1030" y="128" width="270" height="212" rx="7" class="box" stroke="#2d7767" stroke-width="3"/>
+  <text x="1055" y="163" class="heading">Executor admission</text>
+  <rect x="1054" y="181" width="222" height="35" rx="4" fill="#edf7f3" stroke="#9bc6ba"/>
+  <text x="1070" y="204" class="mono">acceptedSlots = max + queue</text>
+  <rect x="1054" y="226" width="222" height="35" rx="4" fill="#f6f8f7" stroke="#b8c9c4"/>
+  <text x="1094" y="249" class="mono">ArrayBlockingQueue</text>
+  <rect x="1054" y="271" width="222" height="35" rx="4" fill="#edf7f3" stroke="#9bc6ba"/>
+  <text x="1083" y="294" class="mono">runningSlots = max</text>
+  <text x="1055" y="329" class="small">Fail fast when no slot remains</text>
+
+  <rect x="1340" y="170" width="110" height="128" rx="7" class="box" stroke="#6fbf5c"/>
+  <text x="1359" y="207" class="heading">Handler</text>
+  <text x="1358" y="241" class="body">Business work</text>
+  <text x="1357" y="270" class="small">Idempotency</text>
+
+  <path d="M240 234 H285" class="line"/>
+  <text x="245" y="220" class="small">one transaction</text>
+  <path d="M525 234 H570" class="line"/>
+  <path d="M760 234 H805" class="line"/>
+  <text x="769" y="220" class="small">send</text>
+  <path d="M985 234 H1030" class="line"/>
+  <path d="M1300 234 H1340" class="line"/>
+  <text x="1303" y="220" class="small">admit</text>
+
+  <path d="M1395 298 V380 H405 V322" class="line"/>
+  <text x="750" y="400" class="small">RESULT: RUNNING / SUCCEEDED / FAILED is persisted back to execution state</text>
+  <path d="M1050 340 C980 382 810 370 680 298" class="warn-line"/>
+  <text x="842" y="354" class="small" fill="#a13e35">ACK accepted=false · executor_overloaded</text>
+
+  <rect x="40" y="442" width="1420" height="174" rx="8" fill="#ffffff" stroke="#d9e4e0"/>
+  <text x="62" y="470" class="lane">OPERATIONS AND EVOLUTION</text>
+
+  <rect x="60" y="492" width="420" height="98" rx="7" fill="#fff9eb" stroke="#e6c36e" stroke-width="2"/>
+  <text x="84" y="522" class="heading">Schema migration</text>
+  <text x="84" y="551" class="mono">firefly_schema_version → h2/mysql/postgresql vN.sql</text>
+  <text x="84" y="577" class="small">Replay in order; evolve defaults without overwriting user state</text>
+
+  <rect x="520" y="492" width="420" height="98" rx="7" fill="#fff3f0" stroke="#df8a78" stroke-width="2"/>
+  <text x="544" y="522" class="heading">Secure startup</text>
+  <text x="544" y="551" class="body">cluster / non-local Admin HTTP → verify dev credentials</text>
+  <text x="544" y="577" class="small">Unsafe defaults or pending password change block management access</text>
+
+  <rect x="980" y="492" width="460" height="98" rx="7" fill="#edf7f3" stroke="#74aa9d" stroke-width="2"/>
+  <text x="1004" y="522" class="heading">Health + Metrics</text>
+  <text x="1004" y="551" class="body">Gateway links · Executor registration · task sync → readiness</text>
+  <text x="1004" y="577" class="small">active / queued / overload ACK / Outbox age / DEAD</text>
+
+  <path d="M270 492 V430 H405 V322" class="soft-line"/>
+  <path d="M730 492 V430 H895 V298" class="soft-line"/>
+  <path d="M1210 492 V430 H1165 V340" class="soft-line"/>
+
+  <text x="60" y="652" class="lane">FOUR VERIFIABLE BOUNDARIES</text>
+  <rect x="60" y="674" width="325" height="92" rx="7" fill="#eef7ec" stroke="#a8d19d"/>
+  <text x="82" y="705" class="heading">01 · Resource</text>
+  <text x="82" y="734" class="body">Concurrency, queue, and accepted work are bounded</text>
+  <text x="82" y="758" class="small">Overload becomes an explicit result</text>
+
+  <rect x="410" y="674" width="325" height="92" rx="7" fill="#fff8e8" stroke="#e5c777"/>
+  <text x="432" y="705" class="heading">02 · Time</text>
+  <text x="432" y="734" class="body">ACK deadline and execution timeout are separate</text>
+  <text x="432" y="758" class="small">Retries have windows; transitional states have exits</text>
+
+  <rect x="760" y="674" width="325" height="92" rx="7" fill="#eef5f8" stroke="#9cc5d6"/>
+  <text x="782" y="705" class="heading">03 · State</text>
+  <text x="782" y="734" class="body">Execution and Outbox states remain traceable</text>
+  <text x="782" y="758" class="small">Failure, timeout, and DEAD are auditable</text>
+
+  <rect x="1110" y="674" width="330" height="92" rx="7" fill="#fff1ee" stroke="#dfa092"/>
+  <text x="1132" y="705" class="heading">04 · Operational truth</text>
+  <text x="1132" y="734" class="body">Startup, migration, and health are enforceable</text>
+  <text x="1132" y="758" class="small">Readiness reflects real dependencies</text>
+</svg>
