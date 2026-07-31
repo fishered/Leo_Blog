@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Firefly explicit boundaries</title>
+  <desc id="desc">Control plane, data plane, and state plane pass explicit policies, wire contracts, and fencing checks before reaching scheduler core.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#334155"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="720" fill="#f8fafc"/>
+  <text x="60" y="62" font-family="Inter, Segoe UI, sans-serif" font-size="30" font-weight="700" fill="#111827">Firefly v1.0.2: explicit boundaries</text>
+  <text x="60" y="94" font-family="Inter, Segoe UI, sans-serif" font-size="16" fill="#475569">Each plane owns its policy, failure result, and compatibility contract.</text>
+
+  <rect x="60" y="130" width="330" height="370" rx="6" fill="#ffffff" stroke="#dc5a47" stroke-width="2"/>
+  <rect x="60" y="130" width="330" height="56" rx="6" fill="#fff1ef"/>
+  <text x="84" y="165" font-family="Inter, Segoe UI, sans-serif" font-size="20" font-weight="700" fill="#8f2f22">CONTROL PLANE</text>
+  <text x="84" y="222" font-family="Inter, Segoe UI, sans-serif" font-size="18" font-weight="650" fill="#111827">JDK HttpServer</text>
+  <text x="84" y="258" font-family="Inter, Segoe UI, sans-serif" font-size="16" fill="#334155">AdminHttpRouter</text>
+  <text x="84" y="288" font-family="Inter, Segoe UI, sans-serif" font-size="16" fill="#334155">AdminRouteRegistration</text>
+  <text x="84" y="318" font-family="Inter, Segoe UI, sans-serif" font-size="16" fill="#334155">Admin*Controller</text>
+  <rect x="84" y="354" width="282" height="102" rx="5" fill="#fff7ed" stroke="#f59e0b"/>
+  <text x="104" y="385" font-family="Inter, Segoe UI, sans-serif" font-size="15" font-weight="700" fill="#92400e">BOUNDARY</text>
+  <text x="104" y="414" font-family="Inter, Segoe UI, sans-serif" font-size="15" fill="#334155">AdminRoutePolicy + RBAC</text>
+  <text x="104" y="440" font-family="Inter, Segoe UI, sans-serif" font-size="15" fill="#334155">body / page / batch limits</text>
+
+  <rect x="435" y="130" width="330" height="370" rx="6" fill="#ffffff" stroke="#168a8a" stroke-width="2"/>
+  <rect x="435" y="130" width="330" height="56" rx="6" fill="#e8fbf9"/>
+  <text x="459" y="165" font-family="Inter, Segoe UI, sans-serif" font-size="20" font-weight="700" fill="#116466">DATA PLANE</text>
+  <text x="459" y="222" font-family="Inter, Segoe UI, sans-serif" font-size="18" font-weight="650" fill="#111827">Netty long-lived channels</text>
+  <text x="459" y="258" font-family="Inter, Segoe UI, sans-serif" font-size="16" fill="#334155">Gateway dispatch</text>
+  <text x="459" y="288" font-family="Inter, Segoe UI, sans-serif" font-size="16" fill="#334155">Executor Client</text>
+  <text x="459" y="318" font-family="Inter, Segoe UI, sans-serif" font-size="16" fill="#334155">ACK / result reporting</text>
+  <rect x="459" y="354" width="282" height="102" rx="5" fill="#eff6ff" stroke="#3b82f6"/>
+  <text x="479" y="385" font-family="Inter, Segoe UI, sans-serif" font-size="15" font-weight="700" fill="#1d4ed8">BOUNDARY</text>
+  <text x="479" y="414" font-family="Inter, Segoe UI, sans-serif" font-size="15" fill="#334155">Jackson JSON wire model</text>
+  <text x="479" y="440" font-family="Inter, Segoe UI, sans-serif" font-size="15" fill="#334155">bounded persistence retry</text>
+
+  <rect x="810" y="130" width="330" height="370" rx="6" fill="#ffffff" stroke="#7c5bb7" stroke-width="2"/>
+  <rect x="810" y="130" width="330" height="56" rx="6" fill="#f5f1fb"/>
+  <text x="834" y="165" font-family="Inter, Segoe UI, sans-serif" font-size="20" font-weight="700" fill="#5b3d8d">STATE PLANE</text>
+  <text x="834" y="222" font-family="Inter, Segoe UI, sans-serif" font-size="18" font-weight="650" fill="#111827">JDBC source of truth</text>
+  <text x="834" y="258" font-family="Inter, Segoe UI, sans-serif" font-size="16" fill="#334155">execution + Outbox</text>
+  <text x="834" y="288" font-family="Inter, Segoe UI, sans-serif" font-size="16" fill="#334155">shard lease + metadata</text>
+  <text x="834" y="318" font-family="Inter, Segoe UI, sans-serif" font-size="16" fill="#334155">idempotency claim</text>
+  <rect x="834" y="354" width="282" height="102" rx="5" fill="#f0fdf4" stroke="#22c55e"/>
+  <text x="854" y="385" font-family="Inter, Segoe UI, sans-serif" font-size="15" font-weight="700" fill="#166534">BOUNDARY</text>
+  <text x="854" y="414" font-family="Inter, Segoe UI, sans-serif" font-size="15" fill="#334155">transaction + generation</text>
+  <text x="854" y="440" font-family="Inter, Segoe UI, sans-serif" font-size="15" fill="#334155">conditional-update fencing</text>
+
+  <path d="M225 500 L225 552 L510 552" fill="none" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M600 500 L600 552" fill="none" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M975 500 L975 552 L690 552" fill="none" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="325" y="568" width="550" height="100" rx="6" fill="#172033"/>
+  <text x="600" y="608" text-anchor="middle" font-family="Inter, Segoe UI, sans-serif" font-size="21" font-weight="700" fill="#ffffff">scheduler-core</text>
+  <text x="600" y="640" text-anchor="middle" font-family="Inter, Segoe UI, sans-serif" font-size="15" fill="#dbe4ef">executable schedules / state transitions / routing contracts</text>
+</svg>
