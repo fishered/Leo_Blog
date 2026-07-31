@@ -1,13 +1,13 @@
 {
-  "article": "firefly-v1-0-2-explicit-boundaries",
+  "article": "firefly-boundary-governance",
   "assets": [
     {
       "file": "assets/diagrams/01-explicit-boundaries.svg",
       "type": "diagram",
-      "source": "Original SVG based on the Firefly v1.0.2 implementation",
+      "source": "Original SVG based on the Firefly implementation",
       "purpose": "Separate control-plane, data-plane, and state-plane ownership and show the contract at each boundary",
-      "alt_zh": "Firefly v1.0.2 的控制面、数据面与状态面边界",
-      "alt_en": "Control-plane, data-plane, and state-plane boundaries in Firefly v1.0.2",
+      "alt_zh": "Firefly 的控制面、数据面与状态面边界",
+      "alt_en": "Control-plane, data-plane, and state-plane boundaries in Firefly",
       "language": "bilingual"
     },
     {
