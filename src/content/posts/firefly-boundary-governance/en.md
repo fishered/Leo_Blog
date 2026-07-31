@@ -1,6 +1,6 @@
 ---
 title: "Boundary Governance in Firefly"
-description: "From conditionals to explicit contracts: declarative Admin RBAC, Jackson wire models, bounded persistence retries, cross-process JDBC fencing, plugin API levels, and controlled resharding."
+description: "Firefly uses declarative Admin RBAC, an independent wire contract, bounded backpressure, JDBC fencing, plugin API levels, and controlled resharding to contain scheduling risk at explicit boundaries."
 lang: en
 translationKey: "firefly-boundary-governance"
 published: 2026-07-31
@@ -17,25 +17,32 @@ source:
   published: 2026-07-31
 ---
 
-> Summary: The most dangerous rule in a distributed system is often not an unimplemented one. It is an implemented rule with no name: permissions buried in path checks, a protocol equated with a Java object, retries reduced to another executor submission, or cross-process ownership represented by one token string. Boundary governance in Firefly turns those implicit rules into contracts that can be tested, migrated, and operated.
+> Summary: Firefly does more than trigger work on time. It must control who can change scheduling state, how different versions communicate, where pressure stops when the database slows down, whether an expired owner can still write, and how shard mappings change safely. Explicit control-plane, data-plane, and state-plane boundaries give those risks stable entry points, failure outcomes, and recovery paths.
 
-## This is not a refactor measured by class count
+## Scheduler risk begins when boundaries lose control
 
-A scheduler spans a control plane, data plane, and state plane. Admin API changes jobs and cluster state. Netty Gateway owns high-frequency, long-lived connections. JDBC stores runtime cursors, executions, Outbox records, leases, and business-idempotency claims. A boundary expressed as a local conditional in one layer creates invisible coupling in another.
+A scheduler's happy path is simple: calculate a fire time, locate an Executor, run a handler, and persist the result. Production failures usually begin between those steps. An Admin route change can alter access, a domain-object edit can break wire compatibility, database latency can block a Netty EventLoop, an expired Executor can commit after claim takeover, or old and new Scheduler nodes can calculate ownership with different shard counts.
 
-Path-prefix authorization can work until a route rename silently changes access. Serializing a domain record directly can seem efficient until a Java constructor change becomes a wire incompatibility. A JVM lock around a database update cannot stop a different Executor process from committing an obsolete claim.
+Successful task completion does not prove these boundaries are safe. Firefly separates them into three responsibilities: the control plane decides who may change state, the data plane constrains how messages and pressure propagate, and the state plane proves who still owns a write.
 
-The useful measure for this boundary work is therefore not how many components were introduced. It is whether each critical rule has an explicit owner, input, failure result, and test location.
+| Capability | Design reason | Risk contained |
+|---|---|---|
+| Declarative Admin RBAC | Route registration and authorization share one source | Privilege drift, missing policy, and UI-only authorization |
+| Independent Netty wire contract | Network protocol does not depend on domain-object shape | JDK serialization risk, uncontrolled field evolution, and rolling-upgrade incompatibility |
+| Bounded result-persistence backpressure | JDBC is isolated from EventLoops and all waiting is finite | I/O-thread blocking, unbounded accumulation, and silent loss |
+| JDBC generation fencing | Shared database facts prove cross-process ownership | Stale-owner commits, repeated side effects, and state regression |
+| Plugin API level | SPI compatibility is checked before startup | Partially started plugin sets and product-version guesswork |
+| Controlled shard expansion | One control-plane mapping remains authoritative | Mixed mappings, duplicate triggers, and invalid leases |
 
 ![Control-plane, data-plane, and state-plane boundaries in Firefly](./assets/diagrams/01-explicit-boundaries.svg)
 
 Figure 1: Admin policy, the Netty wire contract, and JDBC fencing protect separate boundaries. Scheduler core receives inputs only after those boundary checks succeed.
 
-## 1. Admin permissions belong to routes, not path guesses
+## 1. Declarative Admin RBAC keeps permissions with routes
 
-A common authorization function checks the HTTP method and then infers the required role from path prefixes or suffixes. The code is not automatically broken, but route declarations and security rules now live in separate locations. Someone adding a `/cancel` endpoint may not discover the authorization branch, and someone reorganizing URLs can unintentionally change access.
+Firefly Admin API is the scheduling control plane. Creating jobs, triggering work, cancelling executions, replaying Outbox records, and managing users carry different risk, so access cannot be inferred by a distant function that guesses from path prefixes and suffixes.
 
-The current Firefly implementation separates Admin HTTP responsibilities:
+Each route group receives an `AdminRoutePolicy` during registration, declaring `READER`, `OPERATOR`, `ADMIN`, or anonymous access at the route boundary. Runtime responsibilities remain explicit:
 
 | Component | Responsibility |
 |---|---|
@@ -46,17 +53,17 @@ The current Firefly implementation separates Admin HTTP responsibilities:
 | `AdminRequestReader` | body, JSON, pagination, and batch limits |
 | `Admin*Controller` | job, execution, cluster, and authentication operations |
 
-`AdminRoutePolicy` is the important abstraction because it moves the security declaration next to route registration. `READER`, `OPERATOR`, `ADMIN`, and anonymous access become independently testable policies. The authorization service consumes a matched policy and does not know business strings such as `/api/users` or `/trigger`.
+The authorization service only consumes a matched policy; it does not know business strings such as `/api/users` or `/trigger`. Adding a route requires registering its Controller and access role together, while URL changes cannot bypass a hidden path rule elsewhere.
 
-The implementation still uses JDK `HttpServer`. Router, Policy, and Controller are internal boundaries; layering does not require Spring MVC or WebFlux. For a lightweight scheduler center, keeping the runtime small also reduces dependency upgrades, startup cost, and attack surface.
+Admin HTTP still uses JDK `HttpServer`. Router, Policy, and Controller define responsibilities without bringing a large web runtime into scheduler core. The result remains lightweight while keeping framework lifecycle outside scheduling semantics.
 
-Input capacity is part of the same security boundary. Body size, page size, and batch count must be validated before a Controller allocates objects or calls JDBC. A client does not need to bypass RBAC if one authorized request can exhaust memory or database capacity. Hidden UI buttons are never authorization; server-side policies and limits are.
+Input capacity is part of the same security boundary. Body size, page size, and batch count are validated before a Controller allocates objects or calls JDBC. This prevents one authorized but oversized request from exhausting memory or database capacity. Hidden UI buttons are never authorization; server-side policies and limits are the real control-plane defense.
 
-## 2. A Java record is not a wire contract
+## 2. An independent wire contract prevents domain drift from becoming protocol drift
 
 Java `record` is useful for immutable messages, but it defines an in-process shape, not a cross-version protocol. JDK native serialization imports class names, `serialVersionUID`, JVM object graphs, and deserialization risk. Passing a domain record directly to Jackson avoids native serialization but still lets domain refactoring become an accidental protocol change.
 
-Firefly moves the contract into a separate `transports/netty-protocol` module:
+Firefly defines the on-wire contract in a separate `transports/netty-protocol` module:
 
 ```text
 domain message
@@ -65,27 +72,27 @@ domain message
     -> newline-delimited frame
 ```
 
-The wire record has a deliberately small shape: `messageId`, `type`, and a string payload map. Gateway and Executor Client share the protocol module, while connection management, routing, and dispatch stay in `transports/netty`. Publication coordinates, dependency direction, and compatibility tests now have an explicit home.
+The wire record has a deliberately small shape: `messageId`, `type`, and a string payload map. Gateway and Executor Client share the protocol module, while connection management, routing, and dispatch stay in `transports/netty`. Protocol models, codecs, and runtime behavior can therefore evolve and be tested independently.
 
 Choosing Jackson does not make JSON automatically compatible. The protocol still needs rules for missing fields on older peers, unknown message types, and whether negotiated capabilities permit `CANCEL_JOB`. A serializer translates between objects and bytes. Protocol design assigns version semantics. Those are separate responsibilities.
 
-## 3. Bounded retry must not hide rejection
+## 3. Bounded persistence backpressure contains database disruption in the data plane
 
 Gateway persists ACKs and execution results. Running JDBC on a Netty EventLoop lets a database disruption stall unrelated connections. Sending everything to an unbounded queue converts database latency into heap growth. Failing immediately under `AbortPolicy` can amplify a short transient outage.
 
-Firefly uses `NettyResultPersistenceExecutor`: one bounded worker queue, one bounded retry area, and one scheduler thread used only for delay. A saturated worker retries after a finite interval. When retry slots or maximum attempts are exhausted, an explicit final-rejection callback runs. EventLoop threads never wait for that process.
+Firefly uses `NettyResultPersistenceExecutor`: one bounded worker queue, one bounded retry area, and one scheduler thread used only for delay. A saturated worker retries after a finite interval. Exhausted retry slots or attempts enter an explicit final-rejection path. EventLoop threads never wait for that process.
 
 ![Bounded retry and backpressure for Firefly result persistence](./assets/diagrams/02-bounded-result-persistence.svg)
 
 Figure 2: `ACCEPTED`, `RETRYING`, and `REJECTED` are observable submission outcomes. Low-watermark recovery, shutdown, and exhaustion all have deterministic exits.
 
-This resembles queue-oriented retry behavior but is not a new durable message broker. A process crash can still lose an in-memory retry. The component absorbs transient pressure; it does not claim durable delivery. Firefly's Outbox already owns dispatch durability. A second “failure registry” should not exist until its record identity, deduplication key, replay owner, retention, and cleanup lifecycle are defined.
+This capability absorbs transient database pressure but does not impersonate a durable broker. A process crash can still lose an in-memory retry. Outbox owns dispatch recovery; a second failure registry does not exist until record identity, deduplication, replay ownership, retention, and cleanup are defined. That separation prevents one failure from entering multiple recovery systems with no authoritative replay path.
 
-## 4. JUC coordinates threads, not another machine
+## 4. JDBC generation fencing rejects stale-owner writes
 
 Business idempotency often follows `tryAcquire -> execute -> markCompleted`. If a claim expires and a new instance takes it over, the old instance can recover later and try to commit a completion it no longer owns. `ReentrantLock`, `Semaphore`, and JVM-local CAS cannot solve this because two Executor processes do not share JUC state.
 
-The boundary work separates `JdbcBusinessIdempotencyStore` into a state machine, `JdbcIdempotencyClaimDao`, and `JdbcTransactionTemplate`. SQL does not disappear; it moves into the DAO that owns persistent conditional updates. Transaction boundaries no longer compete with business-state decisions inside one large method.
+`JdbcBusinessIdempotencyStore` expresses acquire, complete, and release as a state machine. `JdbcIdempotencyClaimDao` owns conditional updates, while `JdbcTransactionTemplate` owns transaction boundaries. SQL remains in the DAO because the database is the shared source of truth for cross-process claims.
 
 Claim correctness depends on four properties:
 
@@ -98,19 +105,19 @@ That last condition is fencing. An old owner may still possess its token, but it
 
 One boundary remains unavoidable. If a business side effect commits and the process crashes before its completion marker commits, the scheduler cannot manufacture atomicity. A handler still needs a business unique key, same-database transaction, or naturally repeatable operation to achieve effectively-once behavior. Absolute exactly-once is not promised.
 
-## 5. Plugin compatibility is not product-version ordering
+## 5. Plugin API levels make extension compatibility a startup precondition
 
-A plugin is compatible when its SPI contract matches the host, not when product-version strings are numerically close. Firefly adds a default `compatibility()` method to `FireflyPlugin`, returning a supported Plugin API-level range. The current level is `1`, so older plugins inherit a level-1 declaration and do not require recompilation merely because a patch version changes.
+A plugin is compatible when its SPI contract matches the host, not when product-version strings are numerically close. `FireflyPlugin.compatibility()` returns the supported Plugin API-level range. The current level is `1`, and older plugins that do not override the method inherit a level-1 declaration.
 
 The host validates every enabled plugin before starting any plugin. One incompatible extension stops the node before it joins instead of producing a partially active set after earlier plugins have started. API level advances only for a breaking binary or behavioral SPI change, making it a more stable compatibility unit than product version.
 
-The same evidence-based rule applies to cleanup. The unused `admin-model` and non-executable process-fault benchmark scaffold were removed. `compatibility/spring-boot-consumer` remains because CI builds real consumers against Spring Boot 3.3, 3.4, 3.5, and 4.0. A directory is useful when an executable quality gate depends on it, not when its name merely sounds important.
+Compatibility is also verified through executable evidence. `compatibility/spring-boot-consumer` builds real consumers against Spring Boot 3.3, 3.4, 3.5, and 4.0. Plugin API levels protect the extension SPI, while the consumer matrix protects the Starter ecosystem; together they catch runtime and build-time incompatibility at different boundaries.
 
-## 6. “Online” resharding must say who stays online
+## 6. Controlled shard expansion keeps one mapping authoritative
 
 Changing shard count from 32 to 64 changes the `jobId -> shardId` mapping. If an old Scheduler computes with 32 while a new Scheduler computes with 64, the same job can appear in two ownership systems. Without dual-version routing and a migration epoch, calling this zero-downtime for every role hides a duplicate-trigger risk.
 
-Firefly's first-stage design is therefore a controlled online expansion:
+Firefly defines this capability as controlled online expansion:
 
 - Shard count can only increase; contraction requires a full outage.
 - Scheduler, Standby, and API nodes must drain and stop.
@@ -122,21 +129,21 @@ Firefly's first-stage design is therefore a controlled online expansion:
 
 Figure 3: “Online” means the data plane may remain online, not that the control plane is unaware. A failure rolls back the database transaction. Control-plane nodes remain stopped and use the actual database shard count to choose retry or restoration.
 
-The wording is conservative, but it gives operators verifiable prerequisites and a rollback point. Fully online resharding would require dual routing, migration epochs, durable progress, a read/write compatibility window, and retirement of the old mapping. That deserves a separate design rather than a more ambitious name for one maintenance command.
+This boundary gives operators verifiable prerequisites and a rollback point. Fully online resharding would require dual routing, migration epochs, durable progress, a read/write compatibility window, and retirement of the old mapping. Until those capabilities exist, briefly stopping the control plane is safer than allowing two mappings to create executions concurrently.
 
-## A review framework for similar changes
+## How the six capabilities form one defense
 
-Feedback such as “too many conditionals,” “the SQL is too direct,” or “the executor policy is insufficient” becomes actionable through five questions:
+The capabilities act at different failure stages but share the same boundary principles:
 
-1. **Who owns the rule?** Route access belongs to registration policy. State transitions belong to a domain state machine, not a caller holding an SQL string.
-2. **Does the boundary cross processes?** Cross-JVM ownership needs database CAS, leases, or fencing. JUC is local to one process.
-3. **Is waiting bounded?** Queue size, retries, delay, shutdown, and final rejection must all be observable.
-4. **What is the compatibility unit?** Product version, Plugin API level, wire protocol version, and database schema version should evolve independently.
-5. **Where does recovery start?** In-memory retries, a durable Outbox, and a maintenance transaction provide different durability and must not impersonate one another.
+1. **Rules stay with their entry points.** Route registration carries access, the wire module carries protocol, and DAO predicates carry ownership proof.
+2. **Cross-process state uses shared facts.** JUC constrains threads; database time, leases, generations, and fencing constrain nodes.
+3. **Every wait is finite.** Queue size, retries, delay, shutdown, and final rejection are observable.
+4. **Compatibility units evolve independently.** Product version, Plugin API level, wire protocol version, and database schema version are separate contracts.
+5. **Every failure has one recovery owner.** In-memory retry handles transient pressure, Outbox handles dispatch recovery, and maintenance transactions handle mapping changes.
 
 ## Conclusion
 
-Architecture governance is not wrapping every method in a pattern. It is naming the rules that genuinely change, fail, or cross team boundaries. Firefly still uses direct tools: JDK `HttpServer`, Netty, Jackson, and JDBC. The contracts between them are now clearer. Permissions travel with route registration. Wire models are separate from domain models. Bounded retries do not block EventLoops. Database generations reject stale owners. Plugins declare API-level compatibility. Resharding answers honestly which roles stay online.
+The value of Firefly boundary governance is not structural complexity. It is identifying and containing risk before it reaches core scheduling semantics: permissions travel with route registration, wire models remain separate from domain models, bounded backpressure avoids EventLoop blocking, database generations reject stale owners, plugins are checked by API level, and shard expansion preserves one control-plane mapping.
 
 These changes do not remove distributed-system failure. They make failure happen at defined points and leave outcomes that can be tested, observed, and recovered.
 
