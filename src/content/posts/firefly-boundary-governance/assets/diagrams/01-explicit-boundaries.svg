@@ -7,7 +7,7 @@
     </marker>
   </defs>
   <rect width="1200" height="720" fill="#f8fafc"/>
-  <text x="60" y="62" font-family="Inter, Segoe UI, sans-serif" font-size="30" font-weight="700" fill="#111827">Firefly v1.0.2: explicit boundaries</text>
+  <text x="60" y="62" font-family="Inter, Segoe UI, sans-serif" font-size="30" font-weight="700" fill="#111827">Firefly: explicit boundaries</text>
   <text x="60" y="94" font-family="Inter, Segoe UI, sans-serif" font-size="16" fill="#475569">Each plane owns its policy, failure result, and compatibility contract.</text>
 
   <rect x="60" y="130" width="330" height="370" rx="6" fill="#ffffff" stroke="#dc5a47" stroke-width="2"/>

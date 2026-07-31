@@ -1,10 +1,10 @@
 ---
-title: "从条件分支到显式契约：Firefly v1.0.2 的边界治理"
-description: "以 Firefly v1.0.2 为例，分析声明式 Admin RBAC、Jackson wire model、有界持久化重试、跨进程 JDBC fencing、插件 API level 与受控 reshard 如何共同降低分布式调度系统的隐性风险。"
+title: "Firefly 边界治理"
+description: "从条件分支到显式契约，分析声明式 Admin RBAC、Jackson wire model、有界持久化重试、跨进程 JDBC fencing、插件 API level 与受控 reshard。"
 lang: zh
-translationKey: "firefly-v1-0-2-explicit-boundaries"
+translationKey: "firefly-boundary-governance"
 published: 2026-07-31
-slug: firefly-v1-0-2-explicit-boundaries
+slug: firefly-boundary-governance
 tags:
   - "Scheduling"
   - "Distributed Systems"
@@ -17,7 +17,7 @@ source:
   published: 2026-07-31
 ---
 
-> 摘要：分布式系统最危险的规则，往往不是没有实现，而是实现了却没有名字：权限藏在路径判断里，协议等同于某个 Java 对象，重试等同于“再塞一次线程池”，跨进程所有权只靠一个 token 字符串。Firefly v1.0.2 的核心工作，是把这些隐式规则提升为可以测试、迁移和运维的显式契约。
+> 摘要：分布式系统最危险的规则，往往不是没有实现，而是实现了却没有名字：权限藏在路径判断里，协议等同于某个 Java 对象，重试等同于“再塞一次线程池”，跨进程所有权只靠一个 token 字符串。Firefly 的边界治理，是把这些隐式规则提升为可以测试、迁移和运维的显式契约。
 
 ## 这不是一次“多加几个类”的重构
 
@@ -25,9 +25,9 @@ source:
 
 例如，授权代码可以通过 `path.startsWith(...)` 暂时工作，但路由重命名会隐式改变权限；直接序列化领域 record 看起来省事，却把 Java 构造器和网络兼容绑定起来；数据库更新前先在 JVM 加锁，也不能阻止另一台 Executor 提交旧 claim。
 
-因此，v1.0.2 的判断标准不是类数量，而是每条关键规则是否拥有明确的 owner、输入、失败结果和测试位置。
+因此，这次边界治理的判断标准不是类数量，而是每条关键规则是否拥有明确的 owner、输入、失败结果和测试位置。
 
-![Firefly v1.0.2 的控制面、数据面与状态面边界](./assets/diagrams/01-explicit-boundaries.svg)
+![Firefly 的控制面、数据面与状态面边界](./assets/diagrams/01-explicit-boundaries.svg)
 
 图 1：Admin policy、Netty wire contract 和 JDBC fencing 分别守住控制面、数据面与状态面；调度核心只接收已经通过边界校验的输入。
 
@@ -35,7 +35,7 @@ source:
 
 旧式授权通常长这样：先判断 HTTP method，再通过路径前缀或后缀推断需要的角色。代码并不一定“不能用”，问题是它把路由定义与安全策略放在两个不同位置：增加 `/cancel` 端点的人未必会发现另一处授权分支，重构 URL 的人也可能无意改变访问级别。
 
-v1.0.2 将 Admin HTTP 拆成几类清楚的职责：
+当前实现将 Admin HTTP 拆成几类清楚的职责：
 
 | 组件 | 责任 |
 |---|---|
@@ -73,7 +73,7 @@ wire record 只包含稳定字段：`messageId`、`type` 和字符串 payload。
 
 Gateway 收到 ACK 或执行结果后需要写数据库。如果直接在 Netty EventLoop 执行 JDBC，连接抖动会拖住同一 EventLoop 上的其他连接；如果扔进无界队列，数据库变慢会把故障转化为堆内存增长；如果使用 `AbortPolicy` 后直接失败，又会放大短暂抖动。
 
-v1.0.2 使用独立的 `NettyResultPersistenceExecutor`：一个有界工作队列、一个有界重试区和一个只负责延迟调度的线程。工作队列饱和后，任务以固定的有限间隔重新尝试；重试槽位和最大尝试次数耗尽时调用最终拒绝处理。整个等待过程不占用 EventLoop。
+Firefly 使用独立的 `NettyResultPersistenceExecutor`：一个有界工作队列、一个有界重试区和一个只负责延迟调度的线程。工作队列饱和后，任务以固定的有限间隔重新尝试；重试槽位和最大尝试次数耗尽时调用最终拒绝处理。整个等待过程不占用 EventLoop。
 
 ![Firefly 结果持久化的有界重试与反压流程](./assets/diagrams/02-bounded-result-persistence.svg)
 
@@ -85,7 +85,7 @@ v1.0.2 使用独立的 `NettyResultPersistenceExecutor`：一个有界工作队�
 
 业务幂等的典型流程是 `tryAcquire -> execute -> markCompleted`。如果 claim 超时后被新实例接管，旧实例稍后恢复，就可能提交一个已经失去所有权的完成状态。`ReentrantLock`、`Semaphore` 或 JVM 内 CAS 无法解决这个问题，因为两个 Executor 进程根本不共享同一个 JUC 状态。
 
-v1.0.2 将 `JdbcBusinessIdempotencyStore` 拆成状态机、`JdbcIdempotencyClaimDao` 和 `JdbcTransactionTemplate`。SQL 并没有消失，它被放回负责持久化条件更新的 DAO；事务边界也不再和业务状态判断混在一个大方法里。
+这次改造将 `JdbcBusinessIdempotencyStore` 拆成状态机、`JdbcIdempotencyClaimDao` 和 `JdbcTransactionTemplate`。SQL 并没有消失，它被放回负责持久化条件更新的 DAO；事务边界也不再和业务状态判断混在一个大方法里。
 
 claim 的正确性依赖四件事：
 
@@ -100,7 +100,7 @@ claim 的正确性依赖四件事：
 
 ## 5. 插件兼容不能只比较产品版本
 
-插件是否兼容，取决于 SPI 契约，不取决于 `1.0.1` 和 `1.0.2` 的字符串大小。Firefly 为 `FireflyPlugin` 增加默认的 `compatibility()`，返回支持的 Plugin API level 范围。当前 level 仍为 `1`，因此旧 1.x 插件通过默认方法继续兼容，无需为了补丁版本重新编译。
+插件是否兼容，取决于 SPI 契约，不取决于产品版本字符串。Firefly 为 `FireflyPlugin` 增加默认的 `compatibility()`，返回支持的 Plugin API level 范围。当前 level 为 `1`，旧插件通过默认方法继续声明 level 1，不需要仅因补丁版本变化而重新编译。
 
 宿主在启动任何插件前，先校验所有启用插件。这样，一个不兼容插件会阻止节点加入，而不是让前几个插件已经启动、后一个失败，留下部分可用状态。API level 只有在 SPI 二进制或行为契约破坏时才提升，这比把产品版本当作兼容协议更稳定。
 
@@ -136,14 +136,14 @@ Firefly 的第一阶段方案因此叫“受控在线扩容”：
 
 ## 结语
 
-好的架构治理不是把每段代码包装成模式，而是让真正会变化、会失败、会跨团队协作的规则拥有名字。Firefly v1.0.2 仍然使用 JDK `HttpServer`、Netty、Jackson 和 JDBC 这些直接工具，但把它们之间的契约变得更明确：权限随路由声明，协议与领域模型分开，有界重试不阻塞 EventLoop，数据库 generation 阻止旧 owner，插件按 API level 校验，reshard 对“谁可以在线”给出诚实答案。
+好的架构治理不是把每段代码包装成模式，而是让真正会变化、会失败、会跨团队协作的规则拥有名字。Firefly 仍然使用 JDK `HttpServer`、Netty、Jackson 和 JDBC 这些直接工具，但把它们之间的契约变得更明确：权限随路由声明，协议与领域模型分开，有界重试不阻塞 EventLoop，数据库 generation 阻止旧 owner，插件按 API level 校验，reshard 对“谁可以在线”给出诚实答案。
 
 这些变化不会消除分布式系统的失败，却能让失败发生在预先定义的位置，并留下可以测试、观察和恢复的结果。
 
 ## 延伸阅读
 
-- [Firefly v1.0.2 源码](https://github.com/fishered/Firefly/tree/v1.0.2)
-- [Firefly v1.0.2 Release Note](https://fishered.github.io/firefly-home/releases/v1.0.2)
+- [本文对应的 Firefly 源码快照](https://github.com/fishered/Firefly/tree/v1.0.2)
+- [相关版本说明](https://fishered.github.io/firefly-home/releases/v1.0.2)
 - [AdminRoutePolicy](https://github.com/fishered/Firefly/blob/v1.0.2/apis/admin-http/src/main/java/com/firefly/api/admin/http/routing/AdminRoutePolicy.java)
 - [NettyResultPersistenceExecutor](https://github.com/fishered/Firefly/blob/v1.0.2/transports/netty/src/main/java/com/firefly/executor/netty/NettyResultPersistenceExecutor.java)
 - [JdbcReshardTool](https://github.com/fishered/Firefly/blob/v1.0.2/stores/jdbc/src/main/java/com/firefly/store/jdbc/JdbcReshardTool.java)
