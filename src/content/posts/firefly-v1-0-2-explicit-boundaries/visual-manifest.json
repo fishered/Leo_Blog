@@ -1,0 +1,32 @@
+{
+  "article": "firefly-v1-0-2-explicit-boundaries",
+  "assets": [
+    {
+      "file": "assets/diagrams/01-explicit-boundaries.svg",
+      "type": "diagram",
+      "source": "Original SVG based on the Firefly v1.0.2 implementation",
+      "purpose": "Separate control-plane, data-plane, and state-plane ownership and show the contract at each boundary",
+      "alt_zh": "Firefly v1.0.2 的控制面、数据面与状态面边界",
+      "alt_en": "Control-plane, data-plane, and state-plane boundaries in Firefly v1.0.2",
+      "language": "bilingual"
+    },
+    {
+      "file": "assets/diagrams/02-bounded-result-persistence.svg",
+      "type": "diagram",
+      "source": "Original SVG based on NettyResultPersistenceExecutor",
+      "purpose": "Explain finite worker capacity, delayed retry, low-watermark recovery, and terminal rejection without blocking Netty EventLoop threads",
+      "alt_zh": "Firefly 结果持久化的有界重试与反压流程",
+      "alt_en": "Bounded retry and backpressure for Firefly result persistence",
+      "language": "bilingual"
+    },
+    {
+      "file": "assets/diagrams/03-controlled-reshard.svg",
+      "type": "diagram",
+      "source": "Original SVG based on JdbcReshardTool and the Firefly operating procedure",
+      "purpose": "Show which roles stay online, the transactional maintenance boundary, and restart sequencing during shard expansion",
+      "alt_zh": "Firefly 受控在线分片扩容的操作时序",
+      "alt_en": "Operational sequence for controlled Firefly shard expansion",
+      "language": "bilingual"
+    }
+  ]
+}
