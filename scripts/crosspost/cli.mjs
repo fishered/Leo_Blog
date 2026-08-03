@@ -156,6 +156,7 @@ async function runPublish(args) {
   const context = await launchChrome({ headless: args.headless === true });
   const limit = args.limit ? Number(args.limit) : Number.POSITIVE_INFINITY;
   let publishedOrPrepared = 0;
+  let shouldKeepBrowserOpen = false;
 
   try {
     for (const post of posts) {
@@ -185,19 +186,30 @@ async function runPublish(args) {
         siteUrl: args.siteUrl,
         imageBaseUrl: args.imageBaseUrl,
       });
-      const result = await publishArticle(context, platform, article, {
-        yes: args.yes === true,
-        skipRemoteDuplicateCheck: args.skipRemoteDuplicateCheck === true,
-      });
+      let result;
+      try {
+        result = await publishArticle(context, platform, article, {
+          yes: args.yes === true,
+          skipRemoteDuplicateCheck: args.skipRemoteDuplicateCheck === true,
+        });
+      } catch (error) {
+        console.log(`[${platform.id}] failed ${post.slug}: ${error.message}`);
+        if (args.yes !== true && args.headless !== true) shouldKeepBrowserOpen = true;
+        process.exitCode = 1;
+        break;
+      }
       console.log(`[${platform.id}] ${post.slug}: ${result.status}${result.reason ? ` (${result.reason})` : ''} ${result.url ?? ''}`);
       if (result.status === 'blocked') {
         process.exitCode = 1;
         break;
       }
-      if (result.status === 'published' || result.status === 'prepared') publishedOrPrepared += 1;
+      if (result.status === 'published' || result.status === 'prepared') {
+        publishedOrPrepared += 1;
+        if (result.status === 'prepared') shouldKeepBrowserOpen = true;
+      }
     }
   } finally {
-    if (args.yes === true || args.headless === true) {
+    if (args.yes === true || args.headless === true || !shouldKeepBrowserOpen) {
       await context.close().catch(() => {});
     } else {
       console.log('Chrome is left open for manual review. Stop the command with Ctrl+C after you finish.');

@@ -314,6 +314,49 @@ function publicImageUrl(post, imageUrl, imageBaseUrl) {
   return `${imageBaseUrl.replace(/\/$/, '')}/${encodePathForUrl(relativeFile)}`;
 }
 
+function mimeTypeForImage(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+  if (ext === '.png') return 'image/png';
+  if (ext === '.gif') return 'image/gif';
+  if (ext === '.webp') return 'image/webp';
+  if (ext === '.svg') return 'image/svg+xml';
+  return 'application/octet-stream';
+}
+
+async function rasterizeSvgToPngBuffer(filePath) {
+  let sharp;
+  try {
+    sharp = (await import('sharp')).default;
+  } catch {
+    throw new Error('SVG image needs PNG conversion, but sharp is not available. Run npm install first.');
+  }
+
+  return sharp(filePath, { density: 192 })
+    .png()
+    .toBuffer();
+}
+
+async function localImageDataUri(post, imageUrl, platform) {
+  const localFile = localImageFileForPost(post, imageUrl);
+  const ext = path.extname(localFile).toLowerCase();
+  const shouldRasterize = ext === '.svg' && platform.rasterizeSvgImages;
+  const mime = shouldRasterize ? 'image/png' : mimeTypeForImage(localFile);
+  const buffer = shouldRasterize
+    ? await rasterizeSvgToPngBuffer(localFile)
+    : await readFile(localFile);
+
+  return `data:${mime};base64,${buffer.toString('base64')}`;
+}
+
+async function imageUrlForPlatform(post, image, platform, imageBaseUrl) {
+  if (isRemoteUrl(image.url)) return image.url;
+  if (platform.embedLocalImagesAsDataUri) {
+    return localImageDataUri(post, image.url, platform);
+  }
+  return publicImageUrl(post, image.url, imageBaseUrl);
+}
+
 function replaceHtmlImageSources(html, urls) {
   let imageIndex = 0;
   return html.replace(HTML_IMAGE_RE, (img) => {
@@ -379,8 +422,9 @@ export async function prepareArticleForPlatform(post, platform, options = {}) {
   }
 
   let markdown = post.body;
-  const imageUrls = images.map((image) => publicImageUrl(post, image.url, imageBaseUrl));
-  const { segments: editorSegments, imageFiles } = splitMarkdownBodyForEditor(post.body, post.dir);
+  const imageUrls = await Promise.all(
+    images.map((image) => imageUrlForPlatform(post, image, platform, imageBaseUrl)),
+  );
   images.forEach((image, index) => {
     if (isRemoteUrl(image.url)) return;
     markdown = markdown.replace(image.url, imageUrls[index]);
@@ -396,8 +440,6 @@ export async function prepareArticleForPlatform(post, platform, options = {}) {
     markdown,
     html: replaceHtmlImageSources(assets.html, imageUrls),
     imageUrls,
-    editorSegments,
-    imageFiles,
   };
 }
 

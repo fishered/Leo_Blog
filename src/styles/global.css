@@ -333,7 +333,8 @@ img { display: block; max-width: 100%; height: auto; }
 .article-meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 20px; margin-top: 22px; color: var(--muted); font: 500 11px var(--mono); }
 .article-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 12px; }
 .article-layout { display: grid; grid-template-columns: 200px minmax(0, 960px) 200px; justify-content: space-between; gap: 32px; align-items: start; padding-block: 18px 84px; }
-.article-content { padding: 42px 46px 58px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); box-shadow: var(--shadow); }
+.article-content { padding: 42px 46px 58px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); box-shadow: var(--shadow); overflow-x: auto; }
+.article-content > h1:first-child { display: none; }
 .article-rail,
 .toc { position: sticky; top: 90px; align-self: start; }
 .provenance { padding-top: 15px; }

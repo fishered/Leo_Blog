@@ -1,0 +1,20 @@
+[
+  {
+    "file": "assets/diagrams/01-execution-outbox-lifecycle.svg",
+    "type": "diagram",
+    "source": "Firefly repository implementation",
+    "editable_source": null,
+    "purpose": "Show the application entry point, JDBC transaction boundary, and compatibility adapter for execution lifecycle changes",
+    "alt_zh": "Execution 生命周期服务通过 JDBC 事务更新 execution、target 和 Outbox，并保留 Repository 兼容适配",
+    "alt_en": "Execution lifecycle service updates execution, targets, and Outbox in a JDBC transaction while retaining a repository compatibility adapter"
+  },
+  {
+    "file": "assets/diagrams/02-worker-shutdown.svg",
+    "type": "diagram",
+    "source": "Firefly ManagedWorker and SchedulerNodeCoordinator implementation",
+    "editable_source": null,
+    "purpose": "Explain bounded worker shutdown and the fact that ownership release also runs after an await timeout",
+    "alt_zh": "Coordinator 关闭新 reconcile 入口，Worker 最多等待五秒，随后执行所有权释放回调",
+    "alt_en": "Coordinator closes reconcile admission, workers await for up to five seconds, then the ownership release callback runs"
+  }
+]

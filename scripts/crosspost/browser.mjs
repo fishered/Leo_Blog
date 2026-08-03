@@ -164,7 +164,7 @@ async function writeClipboard(page, text, html) {
 }
 
 async function pasteIntoLocator(page, locator, value, html) {
-  await locator.click({ timeout: 5000 });
+  await locator.click({ timeout: 5000, force: true });
   const mod = process.platform === 'darwin' ? 'Meta' : 'Control';
   const selectedEditable = await locator.evaluate((node) => {
     if (!(node instanceof HTMLElement) || node.contentEditable !== 'true') return false;
@@ -187,7 +187,49 @@ async function pasteIntoLocator(page, locator, value, html) {
   }
 }
 
-async function fillFirst(page, selectors, value, label, html) {
+async function typeIntoLocator(page, locator, value) {
+  await locator.click({ timeout: 5000, force: true });
+  const mod = process.platform === 'darwin' ? 'Meta' : 'Control';
+  await page.keyboard.press(`${mod}+A`).catch(() => {});
+  await page.keyboard.insertText(value);
+}
+
+async function textInLocator(locator) {
+  return locator.evaluate((node) => {
+    if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) return node.value;
+    return node.textContent ?? '';
+  }).catch(() => '');
+}
+
+async function pageContainsProbe(page, probe) {
+  if (!probe) return true;
+  const bodyText = await page.locator('body').textContent().catch(() => '');
+  if (bodyText.includes(probe)) return true;
+  const activeText = await page.evaluate(() => {
+    const node = document.activeElement;
+    if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) return node.value;
+    return node?.textContent ?? '';
+  }).catch(() => '');
+  return activeText.includes(probe);
+}
+
+function meaningfulProbe(value) {
+  return value
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/!\[[^\]]*]\([^)]+\)/g, '')
+    .replace(/[#>*_`[\](){}.,:;'"!?，。！？：；、“”‘’（）【】]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 24);
+}
+
+async function fillFirst(page, selectors, value, label, html, directTextInput = false, verify = true) {
+  const probe = meaningfulProbe(value);
+  let lastError = '';
   for (const selector of selectors) {
     const locator = page.locator(selector).first();
     const count = await locator.count().catch(() => 0);
@@ -196,17 +238,75 @@ async function fillFirst(page, selectors, value, label, html) {
     try {
       await locator.waitFor({ state: 'visible', timeout: 5000 });
       const tagName = await locator.evaluate((node) => node.tagName.toLowerCase()).catch(() => '');
-      if ((tagName === 'input' || tagName === 'textarea') && !html) {
+      if (directTextInput) {
+        if (tagName === 'input' || tagName === 'textarea') {
+          await locator.fill(value, { timeout: 15000 });
+        } else {
+          await typeIntoLocator(page, locator, value);
+        }
+      } else if ((tagName === 'input' || tagName === 'textarea') && !html) {
         await locator.fill(value, { timeout: 15000 });
       } else {
         await pasteIntoLocator(page, locator, value, html);
       }
+      await page.waitForTimeout(800);
+      if (verify && probe) {
+        const actualText = await textInLocator(locator);
+        if (!actualText.includes(probe) && !(await pageContainsProbe(page, probe))) {
+          throw new Error(`filled ${label} selector "${selector}", but content did not appear`);
+        }
+      }
       return { selector };
-    } catch {
+    } catch (error) {
+      lastError = `${selector}: ${error.message}`;
       // Try the next selector; editors change markup often.
     }
   }
-  throw new Error(`Could not find a visible ${label} field. Update selectors for this platform.`);
+  throw new Error(`Could not fill ${label}. Last error: ${lastError || 'no matching selector'}`);
+}
+
+async function fillByClick(page, point, value, label, html, directTextInput = false) {
+  await page.mouse.click(point.x, point.y);
+  const mod = process.platform === 'darwin' ? 'Meta' : 'Control';
+  await page.keyboard.press(`${mod}+A`).catch(() => {});
+  if (directTextInput) {
+    await page.keyboard.insertText(value);
+  } else {
+    const clipboardOk = await writeClipboard(page, value, html);
+    if (clipboardOk) {
+      await page.keyboard.press(`${mod}+V`);
+    } else {
+      await page.keyboard.insertText(value);
+    }
+  }
+  await page.waitForTimeout(1200);
+
+  const probe = meaningfulProbe(value);
+  if (probe) {
+    if (!(await pageContainsProbe(page, probe))) {
+      throw new Error(`Could not fill ${label} with coordinate fallback`);
+    }
+  }
+
+  return { selector: `point:${point.x},${point.y}` };
+}
+
+async function fillJuejinArticle(page, platform, article) {
+  let titleFill;
+  try {
+    titleFill = await fillFirst(page, platform.titleSelectors, article.title, 'title', undefined, platform.directTextInput);
+  } catch {
+    titleFill = await fillByClick(page, { x: 180, y: 90 }, article.title, 'title', undefined, platform.directTextInput);
+  }
+
+  let bodyFill;
+  try {
+    bodyFill = await fillFirst(page, platform.bodySelectors, article.markdown, 'body editor', undefined, platform.directTextInput, false);
+  } catch {
+    bodyFill = await fillByClick(page, { x: 64, y: 184 }, article.markdown, 'body editor', undefined, platform.directTextInput);
+  }
+
+  return { titleFill, bodyFill };
 }
 
 async function clickPublish(page, platform) {
@@ -313,7 +413,15 @@ export async function publishArticle(context, platform, article, options = {}) {
 
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
 
-  const titleFill = await fillFirst(page, platform.titleSelectors, article.title, 'title');
+  let titleFill;
+  let bodyFill;
+
+  if (platform.id === 'juejin') {
+    ({ titleFill, bodyFill } = await fillJuejinArticle(page, platform, article));
+  } else {
+    titleFill = await fillFirst(page, platform.titleSelectors, article.title, 'title');
+  }
+
   if (platform.tagSelectors?.length) {
     const tagsValue = devtoTagList(article.tags);
     if (tagsValue) {
@@ -324,9 +432,29 @@ export async function publishArticle(context, platform, article, options = {}) {
       }
     }
   }
-  const bodyFill = platform.id === 'zhihu'
-    ? await fillFirst(page, platform.bodySelectors, article.html, 'body editor', article.html)
-    : await fillFirst(page, platform.bodySelectors, article.markdown, 'body editor', platform.pasteMode === 'html' ? article.html : undefined);
+  if (!bodyFill) {
+    if (platform.id === 'zhihu') {
+      bodyFill = await fillFirst(
+        page,
+        platform.bodySelectors,
+        article.html,
+        'body editor',
+        article.html,
+        false,
+        false,
+      );
+    } else {
+      bodyFill = await fillFirst(
+        page,
+        platform.bodySelectors,
+        article.markdown,
+        'body editor',
+        platform.pasteMode === 'html' ? article.html : undefined,
+        false,
+        false,
+      );
+    }
+  }
 
   if (options.yes) {
     const clicked = await clickPublish(page, platform);
