@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="720" viewBox="0 0 1400 720" role="img" aria-labelledby="title desc">
+  <title id="title">Firefly scheduler persistence before and after bounded batching</title>
+  <desc id="desc">Comparison of per-job transactions with bounded atomic batch transactions.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#17363a" flood-opacity=".14"/>
+    </filter>
+    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0 0 9 3 0 6Z" fill="#d77770"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0 0 9 3 0 6Z" fill="#4b8f84"/>
+    </marker>
+  </defs>
+  <rect width="1400" height="720" fill="#f5f8f7"/>
+  <text x="70" y="70" fill="#263b40" font-family="Segoe UI,Arial,sans-serif" font-size="30" font-weight="700">Scheduler persistence: transaction boundary decides throughput</text>
+  <text x="70" y="104" fill="#728183" font-family="Segoe UI,Arial,sans-serif" font-size="16">Same correctness invariants, fewer connections, database round trips, and WAL flushes.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="145" width="590" height="420" rx="8" fill="#fff" stroke="#e2b4af" stroke-width="2"/>
+    <rect x="740" y="145" width="590" height="420" rx="8" fill="#fff" stroke="#9fc6bd" stroke-width="2"/>
+  </g>
+
+  <text x="105" y="194" fill="#c75f59" font-family="Segoe UI,Arial,sans-serif" font-size="15" font-weight="700">BEFORE / ONE TRANSACTION PER JOB</text>
+  <text x="775" y="194" fill="#34786f" font-family="Segoe UI,Arial,sans-serif" font-size="15" font-weight="700">AFTER / BOUNDED ATOMIC BATCH</text>
+
+  <g font-family="Segoe UI,Arial,sans-serif" font-size="16" text-anchor="middle">
+    <g fill="#fff" stroke="#d77770" stroke-width="2">
+      <rect x="105" y="235" width="140" height="55" rx="6"/><rect x="292" y="235" width="140" height="55" rx="6"/><rect x="479" y="235" width="140" height="55" rx="6"/>
+      <rect x="105" y="338" width="140" height="55" rx="6"/><rect x="292" y="338" width="140" height="55" rx="6"/><rect x="479" y="338" width="140" height="55" rx="6"/>
+    </g>
+    <g fill="#733c39">
+      <text x="175" y="269">Borrow connection</text><text x="362" y="269">Read DB clock</text><text x="549" y="269">Cursor CAS</text>
+      <text x="175" y="372">Insert execution</text><text x="362" y="372">Insert outbox</text><text x="549" y="372">COMMIT</text>
+    </g>
+    <g stroke="#d77770" stroke-width="2.5" fill="none" marker-end="url(#arrow-red)">
+      <path d="M245 262h37"/><path d="M432 262h37"/><path d="M549 290v38H175v0"/><path d="M245 365h37"/><path d="M432 365h37"/>
+    </g>
+    <text x="362" y="449" fill="#c75f59" font-size="24" font-weight="700">50,000 jobs = 50,000 commits</text>
+    <text x="362" y="486" fill="#7e6968">Frequent JDBC round trips and WALSync</text>
+
+    <g fill="#fff" stroke="#4b8f84" stroke-width="2">
+      <rect x="775" y="235" width="140" height="55" rx="6"/><rect x="962" y="235" width="140" height="55" rx="6"/><rect x="1149" y="235" width="140" height="55" rx="6"/>
+      <rect x="775" y="338" width="140" height="55" rx="6"/><rect x="962" y="338" width="140" height="55" rx="6"/><rect x="1149" y="338" width="140" height="55" rx="6"/>
+    </g>
+    <g fill="#285f58">
+      <text x="845" y="269">1 connection</text><text x="1032" y="269">1 DB clock</text><text x="1219" y="269">Batch cursor CAS</text>
+      <text x="845" y="372">Batch executions</text><text x="1032" y="372">Batch outbox</text><text x="1219" y="372">COMMIT</text>
+    </g>
+    <g stroke="#4b8f84" stroke-width="2.5" fill="none" marker-end="url(#arrow-green)">
+      <path d="M915 262h37"/><path d="M1102 262h37"/><path d="M1219 290v38H845v0"/><path d="M915 365h37"/><path d="M1102 365h37"/>
+    </g>
+    <text x="1032" y="449" fill="#34786f" font-size="24" font-weight="700">Batch size 200 = at most 250 commits</text>
+    <text x="1032" y="486" fill="#607a75">Rollback remains bounded to one batch</text>
+  </g>
+
+  <rect x="170" y="610" width="1060" height="66" rx="7" fill="#233b41"/>
+  <text x="700" y="638" fill="#f4d08a" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" text-anchor="middle">INVARIANTS KEPT INSIDE THE SAME TRANSACTION</text>
+  <text x="700" y="662" fill="#e5eeeb" font-family="Segoe UI,Arial,sans-serif" font-size="15" text-anchor="middle">expected next_fire_time CAS   +   shard owner / fencing   +   cursor / execution / outbox atomicity</text>
+</svg>

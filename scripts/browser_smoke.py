@@ -54,21 +54,47 @@ with sync_playwright() as playwright:
     assert desktop.locator("html").get_attribute("data-theme") == "dark"
 
     desktop.goto(
-        f"{BASE_URL}/posts/markdown-writing-guide/",
+        f"{BASE_URL}/posts/system-stress-testing-design/",
         wait_until="networkidle",
     )
     assert desktop.get_by_role(
-        "heading", name="这套博客的 Markdown 写作约定", exact=True
+        "heading", name="从一次调度器压测说起：压测该怎么设计才有用", exact=True
     ).is_visible()
     assert desktop.get_by_text("发布轨迹", exact=True).is_visible()
     assert desktop.locator("aside.toc").is_visible()
+    desktop_images = desktop.locator(".prose img")
+    assert desktop_images.count() == 4
+    for index in range(desktop_images.count()):
+        desktop_images.nth(index).scroll_into_view_if_needed()
+        desktop.wait_for_timeout(100)
+    assert desktop.locator(".prose img").evaluate_all(
+        "images => images.every(image => image.complete && image.naturalWidth > 100 && image.naturalHeight > 100)"
+    )
     assert_no_horizontal_overflow(desktop)
-    desktop.screenshot(path=ARTIFACTS / "article-desktop.png", full_page=True)
+    desktop.screenshot(path=ARTIFACTS / "firefly-stress-article-desktop.png", full_page=True)
+
+    desktop.goto(
+        f"{BASE_URL}/en/posts/system-stress-testing-design/",
+        wait_until="networkidle",
+    )
+    assert desktop.get_by_role(
+        "heading", name="What a Scheduler Benchmark Taught Me About Useful Stress Testing", exact=True
+    ).is_visible()
+    english_desktop_images = desktop.locator(".prose img")
+    assert english_desktop_images.count() == 4
+    for index in range(english_desktop_images.count()):
+        english_desktop_images.nth(index).scroll_into_view_if_needed()
+        desktop.wait_for_timeout(100)
+    assert desktop.locator(".prose img").evaluate_all(
+        "images => images.every(image => image.complete && image.naturalWidth > 100 && image.naturalHeight > 100)"
+    )
+    assert_no_horizontal_overflow(desktop)
+    desktop.screenshot(path=ARTIFACTS / "stress-testing-article-en-desktop.png", full_page=True)
 
     desktop.goto(f"{BASE_URL}/search/", wait_until="networkidle")
     search = desktop.locator(".pagefind-ui__search-input")
     assert search.is_visible()
-    search.fill("Markdown")
+    search.fill("Firefly")
     desktop.wait_for_selector(".pagefind-ui__result")
     assert desktop.locator(".pagefind-ui__result").count() >= 1
 
@@ -93,15 +119,42 @@ with sync_playwright() as playwright:
     mobile.screenshot(path=ARTIFACTS / "home-mobile.png", full_page=True)
 
     mobile.goto(
-        f"{BASE_URL}/posts/markdown-writing-guide/",
+        f"{BASE_URL}/posts/system-stress-testing-design/",
         wait_until="networkidle",
     )
     assert mobile.get_by_role(
-        "heading", name="这套博客的 Markdown 写作约定", exact=True
+        "heading", name="从一次调度器压测说起：压测该怎么设计才有用", exact=True
     ).is_visible()
+    mobile_images = mobile.locator(".prose img")
+    assert mobile_images.count() == 4
+    for index in range(mobile_images.count()):
+        mobile_images.nth(index).scroll_into_view_if_needed()
+        mobile.wait_for_timeout(100)
+    assert mobile.locator(".prose img").evaluate_all(
+        "images => images.every(image => image.complete && image.naturalWidth > 100 && image.naturalHeight > 100)"
+    )
     assert mobile.locator(".mobile-dock").is_visible()
     assert_no_horizontal_overflow(mobile)
-    mobile.screenshot(path=ARTIFACTS / "article-mobile.png", full_page=True)
+    mobile.screenshot(path=ARTIFACTS / "firefly-stress-article-mobile.png", full_page=True)
+
+    mobile.goto(
+        f"{BASE_URL}/en/posts/system-stress-testing-design/",
+        wait_until="networkidle",
+    )
+    assert mobile.get_by_role(
+        "heading", name="What a Scheduler Benchmark Taught Me About Useful Stress Testing", exact=True
+    ).is_visible()
+    english_mobile_images = mobile.locator(".prose img")
+    assert english_mobile_images.count() == 4
+    for index in range(english_mobile_images.count()):
+        english_mobile_images.nth(index).scroll_into_view_if_needed()
+        mobile.wait_for_timeout(100)
+    assert mobile.locator(".prose img").evaluate_all(
+        "images => images.every(image => image.complete && image.naturalWidth > 100 && image.naturalHeight > 100)"
+    )
+    assert mobile.locator(".mobile-dock").is_visible()
+    assert_no_horizontal_overflow(mobile)
+    mobile.screenshot(path=ARTIFACTS / "stress-testing-article-en-mobile.png", full_page=True)
 
     assert not console_errors, f"Browser console errors: {console_errors}"
     browser.close()

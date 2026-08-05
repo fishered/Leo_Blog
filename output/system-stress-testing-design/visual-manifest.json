@@ -1,0 +1,46 @@
+{
+  "topic": "Designing trustworthy system stress tests with a Firefly scheduler case study",
+  "slug": "system-stress-testing-design",
+  "visuals": [
+    {
+      "file": "assets/diagrams/01_bounded-batch-transaction.svg",
+      "type": "diagram",
+      "source": "Generated locally from Firefly commit 12fab19321ea03d609f93116c1fb6cbe5aadd87c",
+      "editable_source": "assets/diagrams/01_bounded-batch-transaction.svg",
+      "timestamp": null,
+      "purpose": "Compare the old per-job transaction boundary with bounded atomic batch persistence while showing preserved correctness invariants.",
+      "alt_zh": "逐任务事务与有界批量原子事务对比",
+      "alt_en": "Per-job transactions compared with bounded atomic batching"
+    },
+    {
+      "file": "assets/diagrams/02_scheduling-duration.svg",
+      "type": "benchmark-chart",
+      "source": "Firefly docs/assets/firefly-v1.0.4-scheduling-duration.svg, generated from the v1.0.4 structured benchmark results",
+      "editable_source": "https://github.com/fishered/Firefly/blob/master/docs/assets/firefly-v1.0.4-scheduling-duration.svg",
+      "timestamp": null,
+      "purpose": "Show scheduling drain time before and after bounded batching across 5K to 50K jobs.",
+      "alt_zh": "调度清空耗时优化前后对比",
+      "alt_en": "Scheduling drain time before and after bounded batching"
+    },
+    {
+      "file": "assets/diagrams/03_scheduling-latency.svg",
+      "type": "benchmark-chart",
+      "source": "Firefly docs/assets/firefly-v1.0.4-scheduling-latency.svg, generated from the v1.0.4 structured benchmark results",
+      "editable_source": "https://github.com/fishered/Firefly/blob/master/docs/assets/firefly-v1.0.4-scheduling-latency.svg",
+      "timestamp": null,
+      "purpose": "Show p50, p95, p99, and maximum scheduling latency for optimized runs from 100 to 50K jobs.",
+      "alt_zh": "调度延迟分位数",
+      "alt_en": "Scheduling latency percentiles"
+    },
+    {
+      "file": "assets/diagrams/04_resource-usage.svg",
+      "type": "benchmark-chart",
+      "source": "Firefly docs/assets/firefly-v1.0.4-resource-usage.svg, generated from the v1.0.4 structured benchmark results",
+      "editable_source": "https://github.com/fishered/Firefly/blob/master/docs/assets/firefly-v1.0.4-resource-usage.svg",
+      "timestamp": null,
+      "purpose": "Show JVM heap, process memory, PostgreSQL memory, CPU, and database wait observations under scheduling stress.",
+      "alt_zh": "压测资源占用观察",
+      "alt_en": "Resource usage during scheduling stress"
+    }
+  ]
+}
