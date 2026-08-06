@@ -265,47 +265,90 @@ async function fillFirst(page, selectors, value, label, html, directTextInput = 
   throw new Error(`Could not fill ${label}. Last error: ${lastError || 'no matching selector'}`);
 }
 
-async function fillByClick(page, point, value, label, html, directTextInput = false) {
-  await page.mouse.click(point.x, point.y);
-  const mod = process.platform === 'darwin' ? 'Meta' : 'Control';
-  await page.keyboard.press(`${mod}+A`).catch(() => {});
-  if (directTextInput) {
-    await page.keyboard.insertText(value);
-  } else {
-    const clipboardOk = await writeClipboard(page, value, html);
-    if (clipboardOk) {
-      await page.keyboard.press(`${mod}+V`);
-    } else {
-      await page.keyboard.insertText(value);
-    }
-  }
-  await page.waitForTimeout(1200);
+async function fillMarkdownBody(page, selectors, markdown) {
+  const probe = meaningfulProbe(markdown);
+  let lastError = '';
 
-  const probe = meaningfulProbe(value);
-  if (probe) {
-    if (!(await pageContainsProbe(page, probe))) {
-      throw new Error(`Could not fill ${label} with coordinate fallback`);
+  for (const selector of selectors) {
+    const locator = page.locator(selector).first();
+    if (!(await locator.count().catch(() => 0))) continue;
+
+    try {
+      await locator.waitFor({ state: 'visible', timeout: 5000 });
+      await locator.fill(markdown, { timeout: 15000 });
+    } catch (error) {
+      lastError = `${selector}: ${error.message}`;
+      continue;
     }
+
+    await page.waitForTimeout(800);
+    const actualText = await textInLocator(locator);
+    if (probe && !actualText.includes(probe)) {
+      throw new Error(`The ${labelForPlatform(page)} editor rejected the article body at selector "${selector}"`);
+    }
+    return { selector };
   }
 
-  return { selector: `point:${point.x},${point.y}` };
+  throw new Error(`Could not fill body editor. Last error: ${lastError || 'no visible editable field'}`);
+}
+
+function labelForPlatform(page) {
+  try {
+    return new URL(page.url()).hostname;
+  } catch {
+    return 'platform';
+  }
 }
 
 async function fillJuejinArticle(page, platform, article) {
-  let titleFill;
-  try {
-    titleFill = await fillFirst(page, platform.titleSelectors, article.title, 'title', undefined, platform.directTextInput);
-  } catch {
-    titleFill = await fillByClick(page, { x: 180, y: 90 }, article.title, 'title', undefined, platform.directTextInput);
+  const titleFill = await fillFirst(
+    page,
+    platform.titleSelectors,
+    article.title,
+    'title',
+    undefined,
+    platform.directTextInput,
+    false,
+  );
+
+  const bodyFill = await fillMarkdownBody(page, platform.bodySelectors, article.markdown);
+
+  return { titleFill, bodyFill };
+}
+
+async function fillCnblogsBody(page, platform, markdown) {
+  const codeMirror = page.locator('.CodeMirror').first();
+  if (await codeMirror.count().catch(() => 0)) {
+    await codeMirror.waitFor({ state: 'visible', timeout: 10000 });
+    const actualText = await codeMirror.evaluate((node, value) => {
+      const editor = node.CodeMirror;
+      if (!editor || typeof editor.setValue !== 'function') return null;
+      editor.setValue(value);
+      if (typeof editor.save === 'function') editor.save();
+      if (typeof editor.refresh === 'function') editor.refresh();
+      return typeof editor.getValue === 'function' ? editor.getValue() : null;
+    }, markdown);
+
+    const probe = meaningfulProbe(markdown);
+    if (typeof actualText === 'string' && (!probe || actualText.includes(probe))) {
+      return { selector: '.CodeMirror (CodeMirror.setValue)' };
+    }
   }
 
-  let bodyFill;
-  try {
-    bodyFill = await fillFirst(page, platform.bodySelectors, article.markdown, 'body editor', undefined, platform.directTextInput, false);
-  } catch {
-    bodyFill = await fillByClick(page, { x: 64, y: 184 }, article.markdown, 'body editor', undefined, platform.directTextInput);
-  }
+  return fillMarkdownBody(page, platform.bodySelectors, markdown);
+}
 
+async function fillCnblogsArticle(page, platform, article) {
+  const titleFill = await fillFirst(
+    page,
+    platform.titleSelectors,
+    article.title,
+    'title',
+    undefined,
+    false,
+    false,
+  );
+  const bodyFill = await fillCnblogsBody(page, platform, article.markdown);
   return { titleFill, bodyFill };
 }
 
@@ -418,6 +461,8 @@ export async function publishArticle(context, platform, article, options = {}) {
 
   if (platform.id === 'juejin') {
     ({ titleFill, bodyFill } = await fillJuejinArticle(page, platform, article));
+  } else if (platform.id === 'cnblogs') {
+    ({ titleFill, bodyFill } = await fillCnblogsArticle(page, platform, article));
   } else {
     titleFill = await fillFirst(page, platform.titleSelectors, article.title, 'title');
   }
@@ -444,15 +489,17 @@ export async function publishArticle(context, platform, article, options = {}) {
         false,
       );
     } else {
-      bodyFill = await fillFirst(
-        page,
-        platform.bodySelectors,
-        article.markdown,
-        'body editor',
-        platform.pasteMode === 'html' ? article.html : undefined,
-        false,
-        false,
-      );
+      bodyFill = platform.pasteMode === 'markdown'
+        ? await fillMarkdownBody(page, platform.bodySelectors, article.markdown)
+        : await fillFirst(
+          page,
+          platform.bodySelectors,
+          article.markdown,
+          'body editor',
+          article.html,
+          false,
+          false,
+        );
     }
   }
 
